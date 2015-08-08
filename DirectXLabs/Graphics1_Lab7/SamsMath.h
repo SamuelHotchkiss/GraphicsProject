@@ -7,9 +7,11 @@ struct VERTEX
 {
 	float position[4]; // 0 = X, 1 = Y, 2 = Z, 3 = W
 	float color[4];
+	float normal[4];
 	float U, V;
 
-	VERTEX(float x = 0, float y = 0, float z = 0, float w = 0, float r = 0, float g = 0, float b = 0, float a = 1.0f, float u = 0, float v = 0)
+	VERTEX(float x = 0, float y = 0, float z = 0, float w = 1.0f, float r = 0, float g = 0, float b = 0, float a = 1.0f, 
+		float n0 = 0, float n1 = 0, float n2 = 0, float u = 0, float v = 0)
 	{
 		position[0] = x;
 		position[1] = y;
@@ -21,8 +23,22 @@ struct VERTEX
 		color[2] = b;
 		color[3] = a;
 
+		normal[0] = n0;
+		normal[1] = n1;
+		normal[2] = n2;
+		//normal[3] = 1.0f;
+
 		U = u;
 		V = v;
+	}
+
+	void CreateNormal()
+	{
+		float norm = sqrt( (position[0] * position[0]) + (position[1] * position[1]) + (position[2] * position[2]) );
+		normal[0] = position[0] / norm;
+		normal[1] = position[1] / norm;
+		normal[2] = position[2] / norm;
+		//normal[3] = position[3] / norm;
 	}
 };
 

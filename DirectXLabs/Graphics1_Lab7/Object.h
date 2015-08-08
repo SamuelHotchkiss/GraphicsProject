@@ -52,6 +52,8 @@ void Object::Initialize()
 	//worldMatrix = XMMatrixTranslation(0.0f, 0.0f, 3.0f) * worldMatrix;
 	Translate(worldMatrix, 0.0f, 0.0f, 3.0f);
 
+	//numVertices = mesh.size();
+
 	// Build Vertex Buffer
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	ZeroMemory(&vertexBufferDesc, sizeof(vertexBufferDesc));

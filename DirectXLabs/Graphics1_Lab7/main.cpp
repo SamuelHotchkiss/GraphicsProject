@@ -53,6 +53,7 @@ class DEMO_APP
 
 	Object Star;
 	Object Quad;
+	//Object Pyramid;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -69,7 +70,39 @@ class DEMO_APP
 	ID3D11RasterizerState* pRasterState;
 
 
+	ID3D11Buffer* lightBuff = nullptr;
+
 public:
+	struct DIR_LIGHT
+	{
+		float color[4];
+		float direction[3];
+
+		void CreateNormal()
+		{
+			float norm = sqrt((direction[0] * direction[0]) + (direction[1] * direction[1]) + (direction[2] * direction[2]) + (direction[3] * direction[3]));
+			direction[0] = direction[0] / norm;
+			direction[1] = direction[1] / norm;
+			direction[2] = direction[2] / norm;
+			//direction[3] = direction[3] / norm;
+		}
+
+		DIR_LIGHT(float r = 0.0f, float g = 0.0f, float b = 0.0f, float a = 1.0f,
+				  float x = 0.0f, float y = 0.0f, float z = 0.0f)
+		{
+			color[0] = r;
+			color[1] = g;
+			color[2] = b;
+			color[3] = a;
+
+			direction[0] = x;
+			direction[1] = y;
+			direction[2] = z;
+			//direction[3] = w;
+			//CreateNormal();
+		}
+
+	};
 
 	struct SIMPLE_VERTEX
 	{
@@ -277,19 +310,24 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	VERTEX star[12];
 
 	star[0] = { 0.0f, 0.0f, -0.25f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f };
+	star[0].CreateNormal();
+
 	for (unsigned int numVerts = 1; numVerts < 11; numVerts++)
 	{
 		if (numVerts % 2 != 0)
 		{
 			star[numVerts] = { sinf((angle * 3.14f) / 180.0f), cosf((angle * 3.14f) / 180.0f), 0.0f, 1.0f };
+			star[numVerts].CreateNormal();
 		}
 		else
 		{
 			star[numVerts] = { sinf((angle * 3.14f) / 180.0f) * 0.3f, cosf((angle * 3.14f) / 180.0f) * 0.3f, 0.0f, 1.0f };
+			star[numVerts].CreateNormal();
 		}
 		angle += 36.0f;
 	}
 	star[11] = { 0.0f, 0.0f, 0.25f, 1.0f, 0.0f, 1.0f, 1.0f };
+	star[11].CreateNormal();
 
 #if 0
 	// TODO: PART 2 STEP 3b
@@ -389,6 +427,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	indexData.SysMemSlicePitch = 0;
 #endif
 
+#pragma region STAR&QUAD
+#if 1
 	// TODO: PART 2 STEP 7
 	theDevice->CreateVertexShader(StarShader, sizeof(StarShader), nullptr, &Star.pVShader);
 	theDevice->CreatePixelShader(StarPixel, sizeof(StarPixel), nullptr, &Star.pPShader);
@@ -407,9 +447,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	D3D11_INPUT_ELEMENT_DESC starLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
-	unsigned int num = 2;
+	unsigned int num = 3;
 	theDevice->CreateInputLayout(starLayout, num, StarShader, sizeof(StarShader), &Star.pInputLayout);
 
 	Star.pVertices = star;
@@ -420,10 +461,10 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	VERTEX quad[4] =
 	{
-		{ -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f },
-		{ 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f },
-		{ -1.0f, 0.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
-		{ 1.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f }
+		{ -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f },
+		{ 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f },
+		{ -1.0f, 0.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
+		{ 1.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f }
 	};
 
 	unsigned int quadIndices[6] =
@@ -444,6 +485,27 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Quad.Initialize();
 
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 0.0f);
+
+	DIR_LIGHT theLight(0.5f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 1.0f);
+
+	D3D11_BUFFER_DESC lightDesc;
+	ZeroMemory(&lightDesc, sizeof(lightDesc));
+	lightDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	lightDesc.ByteWidth = sizeof(DIR_LIGHT);
+	lightDesc.Usage = D3D11_USAGE_DYNAMIC;
+	lightDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+	D3D11_SUBRESOURCE_DATA lightSub;
+	lightSub.pSysMem = &theLight;
+	lightSub.SysMemPitch = 0;
+	lightSub.SysMemSlicePitch = 0;
+
+	theDevice->CreateBuffer(&lightDesc, &lightSub, &lightBuff);
+
+#endif
+#pragma endregion
+
+
 
 #endif
 
@@ -511,7 +573,7 @@ bool DEMO_APP::Run()
 	devContext->RSSetViewports(1, &viewPort);
 	devContext->PSSetSamplers(0, 1, &samplerState);
 	
-	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float ClearColor[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
 	devContext->ClearRenderTargetView(targetView, ClearColor);
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
@@ -531,6 +593,7 @@ bool DEMO_APP::Run()
 	devContext->Unmap(sceneMatrixBuffer, 0);
 
 	devContext->VSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
+	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
 
 	devContext->RSSetState(pRasterState);
 
@@ -648,6 +711,7 @@ bool DEMO_APP::ShutDown()
 	Star.Shutdown();
 	Quad.Shutdown();
 
+	SAFE_RELEASE(lightBuff);
 	SAFE_RELEASE(cubeTexture);
 	SAFE_RELEASE(shadeResourceView);
 	SAFE_RELEASE(samplerState);

@@ -48,6 +48,8 @@
     <FxCompile Include="VertexSlimShader.hlsl" />
     <FxCompile Include="StarShader.hlsl" />
     <FxCompile Include="StarPixel.hlsl" />
+    <FxCompile Include="OBJVShader.hlsl" />
+    <FxCompile Include="OBJPShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Trivial_PS.csh" />
