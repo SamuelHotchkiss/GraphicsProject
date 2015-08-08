@@ -441,12 +441,14 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	Cube.Initialize();
 
+	float length = 5.0f;
+
 	OBJ_VERT quad[4] =
 	{
-		{ -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
-		{ 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
-		{ -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f },
-		{ 1.0f, 0.0f, -1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f }
+		{ -length, 0.0f, length, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
+		{ length, 0.0f, length, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
+		{ -length, 0.0f, -length, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f },
+		{ length, 0.0f, -length, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f }
 	};
 	
 	unsigned int quadIndices[6] =
@@ -470,7 +472,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 0.0f);
 
-	theLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+	theLight = DIR_LIGHT(1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f);
 	ambientLight[0] = 0.5f;
 	ambientLight[1] = 0.5f;
 	ambientLight[2] = 0.5f;
@@ -683,9 +685,9 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 	else if (GetAsyncKeyState('G') & 0x1)
 	{
 		theLight.color[0] = 1.0f;
-		theLight.color[1] = 0.0f;
+		theLight.color[1] = 1.0f;
 		theLight.color[2] = 0.0f;
-		theLight.color[3] = 1.0f;
+		theLight.color[3] = 0.0f;
 	}
 
 	if (GetAsyncKeyState('Q') & 0x1)
