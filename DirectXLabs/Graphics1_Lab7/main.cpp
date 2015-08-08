@@ -96,6 +96,7 @@ public:
 	bool Run();
 	bool ShutDown();
 	void MoveCamera(float moveSpd, float rotSpeed, float dt);
+	void Resize();
 };
 
 
@@ -748,6 +749,12 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 	}
 	prevPoint = currPoint;
 }
+
+void DEMO_APP::Resize()
+{
+
+}
+
 //************************************************************
 //************ DESTRUCTION ***********************************
 //************************************************************
@@ -832,6 +839,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case (WM_DESTROY) : { PostQuitMessage(0); }
 						break;
+	case (WM_SIZE) : { /*something, something, something.... dark side*/}
+					 break;
 	}
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
