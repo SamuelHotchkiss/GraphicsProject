@@ -302,6 +302,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	star[11] = { 0.0f, 0.0f, 0.25f, 1.0f, 0.0f, 1.0f, 1.0f };
 	star[11].CreateNormal();
 
+
 #if 0
 	// TODO: PART 2 STEP 3b
 	D3D11_BUFFER_DESC bufferDescription;
