@@ -35,10 +35,10 @@ V_OUT main( V_IN input )
 	nrm = mul(nrm, worldMatrix);
 
 	pos = mul(pos, viewMatrix);
-	nrm = mul(nrm, worldMatrix);
+	nrm = mul(nrm, viewMatrix);
 
 	pos = mul(pos, projMatrix);
-	nrm = mul(nrm, worldMatrix);
+	nrm = mul(nrm, projMatrix);
 
 
 	output.pos = pos;

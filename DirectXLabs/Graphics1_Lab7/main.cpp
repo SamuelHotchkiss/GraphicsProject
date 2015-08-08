@@ -71,38 +71,11 @@ class DEMO_APP
 
 
 	ID3D11Buffer* lightBuff = nullptr;
-
+	ID3D11Buffer* ambientBuff = nullptr;
+	float ambientLight[4];
+	DIR_LIGHT theLight;
 public:
-	struct DIR_LIGHT
-	{
-		float color[4];
-		float direction[3];
-
-		void CreateNormal()
-		{
-			float norm = sqrt((direction[0] * direction[0]) + (direction[1] * direction[1]) + (direction[2] * direction[2]) + (direction[3] * direction[3]));
-			direction[0] = direction[0] / norm;
-			direction[1] = direction[1] / norm;
-			direction[2] = direction[2] / norm;
-			//direction[3] = direction[3] / norm;
-		}
-
-		DIR_LIGHT(float r = 0.0f, float g = 0.0f, float b = 0.0f, float a = 1.0f,
-				  float x = 0.0f, float y = 0.0f, float z = 0.0f)
-		{
-			color[0] = r;
-			color[1] = g;
-			color[2] = b;
-			color[3] = a;
-
-			direction[0] = x;
-			direction[1] = y;
-			direction[2] = z;
-			//direction[3] = w;
-			//CreateNormal();
-		}
-
-	};
+	
 
 	struct SIMPLE_VERTEX
 	{
@@ -486,21 +459,41 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 0.0f);
 
-	DIR_LIGHT theLight(0.5f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 1.0f);
+	theLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f);
+	ambientLight[0] = 0.5f;
+	ambientLight[1] = 0.5f;
+	ambientLight[2] = 0.5f;
+	ambientLight[3] = 1.0f;
 
 	D3D11_BUFFER_DESC lightDesc;
 	ZeroMemory(&lightDesc, sizeof(lightDesc));
 	lightDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	lightDesc.ByteWidth = sizeof(DIR_LIGHT);
+	lightDesc.ByteWidth = sizeof(theLight);
 	lightDesc.Usage = D3D11_USAGE_DYNAMIC;
 	lightDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
 	D3D11_SUBRESOURCE_DATA lightSub;
+	ZeroMemory(&lightSub, sizeof(lightSub));
 	lightSub.pSysMem = &theLight;
 	lightSub.SysMemPitch = 0;
 	lightSub.SysMemSlicePitch = 0;
 
 	theDevice->CreateBuffer(&lightDesc, &lightSub, &lightBuff);
+
+	D3D11_BUFFER_DESC ambDesc;
+	ZeroMemory(&ambDesc, sizeof(ambDesc));
+	ambDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	ambDesc.ByteWidth = 32;//sizeof(theLight);
+	ambDesc.Usage = D3D11_USAGE_DYNAMIC;
+	ambDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+	D3D11_SUBRESOURCE_DATA ambSub;
+	ZeroMemory(&ambSub, sizeof(ambSub));
+	ambSub.pSysMem = &ambientLight;
+	ambSub.SysMemPitch = 0;
+	ambSub.SysMemSlicePitch = 0;
+
+	theDevice->CreateBuffer(&ambDesc, &ambSub, &ambientBuff);
 
 #endif
 #pragma endregion
@@ -551,7 +544,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	CD3D11_RASTERIZER_DESC rasterDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 	rasterDesc.FrontCounterClockwise = TRUE;
-	rasterDesc.CullMode = D3D11_CULL_NONE;
+	rasterDesc.CullMode = D3D11_CULL_FRONT;
 	rasterDesc.AntialiasedLineEnable = true;
 	//rasterDesc.MultisampleEnable = false;
 
@@ -573,7 +566,7 @@ bool DEMO_APP::Run()
 	devContext->RSSetViewports(1, &viewPort);
 	devContext->PSSetSamplers(0, 1, &samplerState);
 	
-	float ClearColor[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
+	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	devContext->ClearRenderTargetView(targetView, ClearColor);
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
@@ -583,17 +576,29 @@ bool DEMO_APP::Run()
 
 	MoveCamera(5.0f, 200.0f, dt);
 
+	D3D11_MAPPED_SUBRESOURCE ambMap;
+	ZeroMemory(&ambMap, sizeof(ambMap));
+	devContext->Map(ambientBuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &ambMap);
+	memcpy(ambMap.pData, &ambientLight, sizeof(ambientLight));
+	devContext->Unmap(ambientBuff, 0);
+
+	D3D11_MAPPED_SUBRESOURCE lightMap;
+	ZeroMemory(&lightMap, sizeof(lightMap));
+	devContext->Map(lightBuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &lightMap);
+	memcpy(lightMap.pData, &theLight, sizeof(theLight));
+	devContext->Unmap(lightBuff, 0);
+
 	scene[0] = Inverse4x4(viewMatrix);
 
 	D3D11_MAPPED_SUBRESOURCE sceneMap;
 	ZeroMemory(&sceneMap, sizeof(sceneMap));
-
 	devContext->Map(sceneMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &sceneMap);
 	memcpy(sceneMap.pData, scene, sizeof(scene));
 	devContext->Unmap(sceneMatrixBuffer, 0);
 
 	devContext->VSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
 	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
+	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
 
 	devContext->RSSetState(pRasterState);
 
@@ -656,6 +661,36 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 		Translate(viewMatrix, moveSpd * dt, 0.0f, 0.0f);
 	}
 
+	if (GetAsyncKeyState('F') & 0x1)
+	{
+		theLight.color[0] = 0.0f;
+		theLight.color[1] = 0.0f;
+		theLight.color[2] = 0.0f;
+		theLight.color[3] = 0.0f;
+	}
+	else if (GetAsyncKeyState('G') & 0x1)
+	{
+		theLight.color[0] = 1.0f;
+		theLight.color[1] = 0.0f;
+		theLight.color[2] = 0.0f;
+		theLight.color[3] = 1.0f;
+	}
+
+	if (GetAsyncKeyState('Q') & 0x1)
+	{
+		ambientLight[0] = 0.0f;
+		ambientLight[1] = 0.0f;
+		ambientLight[2] = 0.0f;
+		ambientLight[3] = 0.0f;
+	}
+	else if (GetAsyncKeyState('E') & 0x1)
+	{
+		ambientLight[0] = 0.5f;
+		ambientLight[1] = 0.5f;
+		ambientLight[2] = 0.5f;
+		ambientLight[3] = 1.0f;
+	}
+
 	// Rotation
 	if (GetAsyncKeyState(VK_RBUTTON))
 	{
@@ -711,6 +746,7 @@ bool DEMO_APP::ShutDown()
 	Star.Shutdown();
 	Quad.Shutdown();
 
+	SAFE_RELEASE(ambientBuff);
 	SAFE_RELEASE(lightBuff);
 	SAFE_RELEASE(cubeTexture);
 	SAFE_RELEASE(shadeResourceView);
