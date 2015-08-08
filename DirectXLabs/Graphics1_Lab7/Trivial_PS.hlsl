@@ -9,7 +9,7 @@ texture2D baseTexture : register(t0);
 
 SamplerState filters[2] : register(s0);
 
-cbuffer LIGHT : register(b0)
+cbuffer DIR_LIGHT : register(b0)
 {
 	float3 lightDir;
 	float4 lightColor;
@@ -19,6 +19,12 @@ cbuffer AMBIENT : register(b1)
 {
 	float4 ambientColor;
 }
+
+//cbuffer POINT_LIGHT : register (b2)
+//{
+//	float3 ptLightPos;
+//	float4 ptLightColor;
+//}
 
 float4 main( V_IN input ) : SV_TARGET
 {
