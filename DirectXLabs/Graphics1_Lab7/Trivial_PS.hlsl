@@ -20,11 +20,11 @@ cbuffer AMBIENT : register(b1)
 	float4 ambientColor;
 }
 
-//cbuffer POINT_LIGHT : register (b2)
-//{
-//	float3 ptLightPos;
-//	float4 ptLightColor;
-//}
+cbuffer POINT_LIGHT : register (b2)
+{
+	float3 ptLightPos;
+	float4 ptLightColor;
+}
 
 float4 main( V_IN input ) : SV_TARGET
 {
@@ -38,8 +38,12 @@ float4 main( V_IN input ) : SV_TARGET
 	float3 ldir = -normalize(lightDir);
 	float3 wnrm = normalize(input.nrm);
 
-	finalColor = saturate((clamp(dot(ldir, wnrm), 0, 1) * finalColor * lightColor) + (finalColor * ambientColor));
 
+	float3 surfacePos = input.posH.xyz;
+	float3 ptldir = normalize(ptLightPos - surfacePos);
+
+
+	finalColor = saturate((clamp(dot(ldir, wnrm), 0, 1) * finalColor * lightColor) + (clamp(dot(ptldir, wnrm), 0, 1) * finalColor * ptLightColor) + (finalColor * ambientColor));
 
 	return finalColor;
 }

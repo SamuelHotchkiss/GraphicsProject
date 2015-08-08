@@ -54,6 +54,7 @@ class DEMO_APP
 	//Object Star;
 	Object Quad;
 	Object Cube;
+	//Object PointLight;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -72,10 +73,11 @@ class DEMO_APP
 
 	ID3D11Buffer* lightBuff = nullptr;
 	ID3D11Buffer* ambientBuff = nullptr;
+
 	float ambientLight[4];
 	DIR_LIGHT theLight;
+
 public:
-	
 
 	struct SIMPLE_VERTEX
 	{
@@ -471,6 +473,17 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Quad.Initialize();
 	
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 0.0f);
+
+	/*OBJ_VERT ptlt = {0.5f, 0.0f, 1.0f};
+	unsigned int ptIndex = 0;
+
+	PointLight.pVertices = &ptlt;
+	PointLight.pIndices = &ptIndex;
+	PointLight.numIndices = 1;
+	PointLight.numVertices = 1;
+
+	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &PointLight.pVShader);
+	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &PointLight.)*/
 
 	theLight = DIR_LIGHT(1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f);
 	ambientLight[0] = 0.5f;
