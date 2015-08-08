@@ -39,11 +39,11 @@ float4 main( V_IN input ) : SV_TARGET
 	float3 wnrm = normalize(input.nrm);
 
 
-	float3 surfacePos = input.posH.xyz;
-	float3 ptldir = normalize(ptLightPos - surfacePos);
+	//float3 surfacePos = input.posH.xyz;
+	//float3 ptldir = normalize(ptLightPos - surfacePos);
 
 
-	finalColor = saturate((clamp(dot(ldir, wnrm), 0, 1) * finalColor * lightColor) + (clamp(dot(ptldir, wnrm), 0, 1) * finalColor * ptLightColor) + (finalColor * ambientColor));
+	finalColor = saturate((clamp(dot(ldir, wnrm), 0, 1) * finalColor * lightColor) /*+ (clamp(dot(ptldir, wnrm), 0, 1) * finalColor * ptLightColor)*/ + (finalColor * ambientColor));
 
 	return finalColor;
 }
