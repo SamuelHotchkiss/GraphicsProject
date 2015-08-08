@@ -161,6 +161,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Cube.h" />
+    <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="Includes.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="SamsMath.h" />
@@ -168,6 +169,7 @@
     <ClInclude Include="XTime.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="XTime.cpp" />
   </ItemGroup>
