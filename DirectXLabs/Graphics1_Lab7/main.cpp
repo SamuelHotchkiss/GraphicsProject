@@ -51,9 +51,9 @@ class DEMO_APP
 	M_4x4 projMatrix;
 	M_4x4 cameraMatrix;
 
-	Object Star;
+	//Object Star;
 	Object Quad;
-	//Object Pyramid;
+	Object Cube;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -262,7 +262,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	theDevice->CreateTexture2D(&textureDescription, textureData, &cubeTexture);
 
-	theDevice->CreateShaderResourceView(cubeTexture, NULL, &shadeResourceView);
+	theDevice->CreateShaderResourceView(cubeTexture, NULL, &Cube.pShaderResource);
 
 	D3D11_SAMPLER_DESC samplerDescription;
 	ZeroMemory(&samplerDescription, sizeof(samplerDescription));
@@ -404,20 +404,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 #pragma region STAR&QUAD
 #if 1
 	// TODO: PART 2 STEP 7
-	theDevice->CreateVertexShader(StarShader, sizeof(StarShader), nullptr, &Star.pVShader);
-	theDevice->CreatePixelShader(StarPixel, sizeof(StarPixel), nullptr, &Star.pPShader);
+	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Cube.pVShader);
+	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Cube.pPShader);
 	
-	//D3D11_INPUT_ELEMENT_DESC vLayout[] =
-	//{
-	//	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	//	{ "UVW", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	//	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-	//};
+	D3D11_INPUT_ELEMENT_DESC vLayout[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "UVW", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
 
-	//// TODO: PART 2 STEP 8b
-	//unsigned int numElements = ARRAYSIZE(vLayout);
-	//theDevice->CreateInputLayout(vLayout, numElements, VertexSlimShader, sizeof(VertexSlimShader), &inputLayout);
-
+	// TODO: PART 2 STEP 8b
+	unsigned int numElements = ARRAYSIZE(vLayout);
+	theDevice->CreateInputLayout(vLayout, numElements, VertexSlimShader, sizeof(VertexSlimShader), &Cube.pInputLayout);
+#if 0
 	D3D11_INPUT_ELEMENT_DESC starLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -432,35 +432,45 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Star.numVertices = 12;
 	Star.numIndices = 60;
 	Star.Initialize();
+#endif
 
-	VERTEX quad[4] =
+	Cube.pVertices = Cube_data;
+	Cube.numVertices = 776;
+	Cube.pIndices = Cube_indicies;
+	Cube.numIndices = 1692;
+
+	Cube.Initialize();
+
+	OBJ_VERT quad[4] =
 	{
-		{ -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f },
-		{ 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f },
-		{ -1.0f, 0.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
-		{ 1.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f }
+		{ -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
+		{ 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
+		{ -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f },
+		{ 1.0f, 0.0f, -1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f }
 	};
-
+	
 	unsigned int quadIndices[6] =
 	{
 		0, 1, 3,
 		0, 3, 2
 	};
 
-	theDevice->CreateVertexShader(StarShader, sizeof(StarShader), nullptr, &Quad.pVShader);
-	theDevice->CreatePixelShader(StarPixel, sizeof(StarPixel), nullptr, &Quad.pPShader);
+	theDevice->CreateShaderResourceView(cubeTexture, NULL, &Quad.pShaderResource);
 
-	theDevice->CreateInputLayout(starLayout, num, StarShader, sizeof(StarShader), &Quad.pInputLayout);
-
+	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Quad.pVShader);
+	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Quad.pPShader);
+	
+	theDevice->CreateInputLayout(vLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Quad.pInputLayout);
+	
 	Quad.pVertices = quad;
 	Quad.numVertices = 4;
 	Quad.pIndices = quadIndices;
 	Quad.numIndices = 6;
 	Quad.Initialize();
-
+	
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 0.0f);
 
-	theLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f);
+	theLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
 	ambientLight[0] = 0.5f;
 	ambientLight[1] = 0.5f;
 	ambientLight[2] = 0.5f;
@@ -545,7 +555,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	CD3D11_RASTERIZER_DESC rasterDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 	rasterDesc.FrontCounterClockwise = TRUE;
-	rasterDesc.CullMode = D3D11_CULL_FRONT;
+	rasterDesc.CullMode = D3D11_CULL_NONE;
 	rasterDesc.AntialiasedLineEnable = true;
 	//rasterDesc.MultisampleEnable = false;
 
@@ -630,9 +640,10 @@ bool DEMO_APP::Run()
 
 	devContext->DrawIndexed(60, 0, 0);
 #endif
-	Star.worldMatrix = RotateY(50.0f * dt) * Star.worldMatrix;
+	Cube.worldMatrix = RotateY(50.0f * dt) * Cube.worldMatrix;
 
-	Star.Render();
+	//Star.Render();
+	Cube.Render();
 	Quad.Render();
 
 	swapChain->Present(0, 0);
@@ -744,7 +755,8 @@ bool DEMO_APP::ShutDown()
 	theDevice ->Release();
 	*/
 
-	Star.Shutdown();
+	//Star.Shutdown();
+	Cube.Shutdown();
 	Quad.Shutdown();
 
 	SAFE_RELEASE(ambientBuff);

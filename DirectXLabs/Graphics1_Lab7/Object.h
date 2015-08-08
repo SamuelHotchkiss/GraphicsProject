@@ -28,8 +28,8 @@ public:
 	// Convert to vertex structure
 	vector<VertexOBJ> mesh;
 
-	VERTEX*						pVertices			= nullptr;		// The actual vertices so we can fill our vertex buffer
-	unsigned int*				pIndices			= nullptr;		// The actual indices so we can fill our index buffer
+	const OBJ_VERT*				pVertices			= nullptr;		// The actual vertices so we can fill our vertex buffer
+	const unsigned int*			pIndices			= nullptr;		// The actual indices so we can fill our index buffer
 	unsigned int				numVertices			= 0;			// The number of vertices
 	unsigned int				numIndices			= 0;			// The number of indices
 
@@ -58,7 +58,7 @@ void Object::Initialize()
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	ZeroMemory(&vertexBufferDesc, sizeof(vertexBufferDesc));
 	vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	vertexBufferDesc.ByteWidth = sizeof(VERTEX) * numVertices;
+	vertexBufferDesc.ByteWidth = sizeof(OBJ_VERT) * numVertices;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBufferDesc.CPUAccessFlags = 0;
 
@@ -93,7 +93,7 @@ void Object::Initialize()
 	D3D11_BUFFER_DESC worldBuffDesc;
 	ZeroMemory(&worldBuffDesc, sizeof(worldBuffDesc));
 	worldBuffDesc.Usage = D3D11_USAGE_DYNAMIC;
-	worldBuffDesc.ByteWidth = sizeof(XMMATRIX);
+	worldBuffDesc.ByteWidth = sizeof(M_4x4);
 	worldBuffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	worldBuffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
@@ -119,7 +119,7 @@ void Object::Render()
 	memcpy(worldMap.pData, &worldMatrix, sizeof(worldMatrix));
 	devContext->Unmap(pWorldBuffer, 0);
 
-	unsigned int stride = sizeof(VERTEX);
+	unsigned int stride = sizeof(OBJ_VERT);
 	unsigned int offset = 0;
 	devContext->IASetVertexBuffers(0, 1, &pVertBuffer, &stride, &offset);
 	devContext->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R32_UINT, offset);
