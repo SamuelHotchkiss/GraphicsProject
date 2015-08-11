@@ -244,43 +244,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//box.PaintObject(1, Tron_height, Tron_width, Tron_numlevels, Tron_pixels, Tron_leveloffsets);
 
 #if 1
-	//TEXTURE STUFF
-	D3D11_TEXTURE2D_DESC textureDescription;
-	ZeroMemory(&textureDescription, sizeof(textureDescription));
-	textureDescription.ArraySize = 1;
-	textureDescription.Height = Tron_height;
-	textureDescription.Width = Tron_width;
-	textureDescription.MipLevels = Tron_numlevels;
-	textureDescription.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	textureDescription.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	textureDescription.SampleDesc.Count = 1;
-
-	D3D11_SUBRESOURCE_DATA textureData[Tron_numlevels];
-	ZeroMemory(&textureData, sizeof(textureData));
-	for (unsigned int i = 0; i < Tron_numlevels; i++)
-	{
-		textureData[i].pSysMem = &Tron_pixels[Tron_leveloffsets[i]];
-		textureData[i].SysMemPitch = 4 * (Tron_width >> i);
-	}
-
-	theDevice->CreateTexture2D(&textureDescription, textureData, &cubeTexture);
-
-	theDevice->CreateShaderResourceView(cubeTexture, NULL, &Cube.pShaderResource);
-
-	D3D11_SAMPLER_DESC samplerDescription;
-	ZeroMemory(&samplerDescription, sizeof(samplerDescription));
-	samplerDescription.Filter = D3D11_FILTER_ANISOTROPIC;
-	samplerDescription.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDescription.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDescription.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDescription.MinLOD = -FLT_MAX;
-	samplerDescription.MaxLOD = FLT_MAX;
-	samplerDescription.MaxAnisotropy = 1;
-	samplerDescription.ComparisonFunc = D3D11_COMPARISON_NEVER;
-
-	theDevice->CreateSamplerState(&samplerDescription, &samplerState);
-
-	
 
 	float angle = 0.0f;
 	VERTEX star[12];
@@ -404,7 +367,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	indexData.SysMemSlicePitch = 0;
 #endif
 
-#pragma region STAR&QUAD
+
 #if 1
 	// TODO: PART 2 STEP 7
 	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Cube.pVShader);
@@ -442,7 +405,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Cube.pIndices = Cube_indicies;
 	Cube.numIndices = 1692;
 
-	Cube.Initialize();
+	Cube.Initialize(nullptr, L"Tron.dds");
 
 	float length = 5.0f;
 
@@ -460,7 +423,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		0, 3, 2
 	};
 
-	theDevice->CreateShaderResourceView(cubeTexture, NULL, &Quad.pShaderResource);
+	//theDevice->CreateShaderResourceView(cubeTexture, NULL, &Quad.pShaderResource);
 
 	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Quad.pVShader);
 	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Quad.pPShader);
@@ -471,7 +434,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Quad.numVertices = 4;
 	Quad.pIndices = quadIndices;
 	Quad.numIndices = 6;
-	Quad.Initialize();
+	Quad.Initialize(nullptr, L"Tron.dds");
 	
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 0.0f);
 
@@ -523,7 +486,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	theDevice->CreateBuffer(&ambDesc, &ambSub, &ambientBuff);
 
 #endif
-#pragma endregion
 
 
 
@@ -591,7 +553,6 @@ bool DEMO_APP::Run()
 	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
 	
 	devContext->RSSetViewports(1, &viewPort);
-	devContext->PSSetSamplers(0, 1, &samplerState);
 	
 	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	devContext->ClearRenderTargetView(targetView, ClearColor);

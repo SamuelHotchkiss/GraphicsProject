@@ -1,3 +1,4 @@
+#pragma once
 
 #include <iostream>
 #include <ctime>
@@ -9,7 +10,6 @@
 
 #include "XTime.h"
 #include "Cube.h"
-#include "Tron.h"
 
 #define SAFE_RELEASE(x) if(x != nullptr) {x->Release(); x = nullptr;}
 

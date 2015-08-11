@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Includes.h"
+#include "DDSTextureLoader.h"
 
 struct VertexOBJ
 {
@@ -14,7 +15,8 @@ class Object
 	ID3D11Buffer*				pVertBuffer			= nullptr;		// Vertex Buffer
 	ID3D11Buffer*				pIndexBuffer		= nullptr;		// Index Buffer
 	ID3D11Buffer*				pWorldBuffer		= nullptr;
-	ID3D11Texture2D*			pTexture			= nullptr;
+	ID3D11Resource*				pTexture			= nullptr;
+	//ID3D11Texture2D*			pTexture			= nullptr;
 	ID3D11SamplerState*			pSamplerState		= nullptr;
 
 	
@@ -37,15 +39,14 @@ public:
 	M_4x4						worldMatrix;
 	//D3D11_INPUT_ELEMENT_DESC	inputDescription;
 
-	void Initialize();
+	void Initialize(const char* modelFile, const wchar_t* textFile);
 	void Render();
-	void PaintObject(unsigned int arrSize, unsigned int height, unsigned int width,
-		unsigned int mipLvls, const unsigned int *texture, const unsigned int *offsets);
+	void PaintObject(const wchar_t* file);
 	void Shutdown();
 	void LoadModelFromFile(const char* file);
 };
 
-void Object::Initialize()
+void Object::Initialize(const char* modelFile = nullptr, const wchar_t* textFile = nullptr)
 {
 	// Initialize World Matrix
 	//worldMatrix = XMMatrixIdentity();
@@ -53,6 +54,10 @@ void Object::Initialize()
 	Translate(worldMatrix, 0.0f, 0.0f, 3.0f);
 
 	//numVertices = mesh.size();
+	if (modelFile)
+		LoadModelFromFile(modelFile);
+	if (textFile)
+		PaintObject(textFile);
 
 	// Build Vertex Buffer
 	D3D11_BUFFER_DESC vertexBufferDesc;
@@ -108,7 +113,7 @@ void Object::Initialize()
 void Object::Render()
 {
 	devContext->VSSetConstantBuffers(0, 1, &pWorldBuffer);
-
+	devContext->PSSetSamplers(0, 1, &pSamplerState);
 	// Update
 
 	// Update world matrix buffer
@@ -134,9 +139,9 @@ void Object::Render()
 	devContext->DrawIndexed(numIndices, 0, 0);
 }
 
-void Object::PaintObject(unsigned int arrSize, unsigned int height, unsigned int width,
-						   unsigned int mipLvls, const unsigned int *texture, const unsigned int *offsets)
+void Object::PaintObject(const wchar_t* file)
 {
+	/*
 	D3D11_TEXTURE2D_DESC textDesc;
 	ZeroMemory(&textDesc, sizeof(textDesc));
 	textDesc.ArraySize = arrSize;
@@ -173,6 +178,21 @@ void Object::PaintObject(unsigned int arrSize, unsigned int height, unsigned int
 	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 
 	theDevice->CreateSamplerState(&samplerDesc, &pSamplerState);
+	*/
+	CreateDDSTextureFromFile(theDevice, file, NULL, &pShaderResource);
+
+	D3D11_SAMPLER_DESC samplerDescription;
+	ZeroMemory(&samplerDescription, sizeof(samplerDescription));
+	samplerDescription.Filter = D3D11_FILTER_ANISOTROPIC;
+	samplerDescription.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDescription.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDescription.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDescription.MinLOD = -FLT_MAX;
+	samplerDescription.MaxLOD = FLT_MAX;
+	samplerDescription.MaxAnisotropy = 1;
+	samplerDescription.ComparisonFunc = D3D11_COMPARISON_NEVER;
+
+	theDevice->CreateSamplerState(&samplerDescription, &pSamplerState);
 }
 
 void Object::Shutdown()

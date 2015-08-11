@@ -165,7 +165,6 @@
     <ClInclude Include="Includes.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="SamsMath.h" />
-    <ClInclude Include="Tron.h" />
     <ClInclude Include="XTime.h" />
   </ItemGroup>
   <ItemGroup>
