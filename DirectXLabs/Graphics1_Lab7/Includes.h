@@ -37,3 +37,4 @@ using namespace DirectX;
 
 ID3D11Device*					theDevice;			// used for  creating stuff
 ID3D11DeviceContext*			devContext;			// binds objects to the pipeline
+ID3D11Buffer*					pWorldBuffer;

@@ -73,9 +73,11 @@ class DEMO_APP
 
 	ID3D11Buffer* lightBuff = nullptr;
 	ID3D11Buffer* ambientBuff = nullptr;
+	ID3D11Buffer* ptltBuff = nullptr;
 
 	float ambientLight[4];
 	DIR_LIGHT theLight;
+	//DIR_LIGHT myPointLight;
 
 public:
 
@@ -438,16 +440,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 0.0f);
 
-	/*OBJ_VERT ptlt = {0.5f, 0.0f, 1.0f};
-	unsigned int ptIndex = 0;
-
-	PointLight.pVertices = &ptlt;
-	PointLight.pIndices = &ptIndex;
-	PointLight.numIndices = 1;
-	PointLight.numVertices = 1;
-
-	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &PointLight.pVShader);
-	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &PointLight.)*/
 
 	theLight = DIR_LIGHT(1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f);
 	ambientLight[0] = 0.5f;
@@ -512,6 +504,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	scene[0] = /*cameraMatrix*/ viewMatrix;
 	scene[1] = projMatrix;
+
+	// Build World Matrix Buffer
+	D3D11_BUFFER_DESC worldBuffDesc;
+	ZeroMemory(&worldBuffDesc, sizeof(worldBuffDesc));
+	worldBuffDesc.Usage = D3D11_USAGE_DYNAMIC;
+	worldBuffDesc.ByteWidth = sizeof(M_4x4);
+	worldBuffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	worldBuffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	
+	D3D11_SUBRESOURCE_DATA worldSub;
+	worldSub.pSysMem = &worldMatrix;
+	worldSub.SysMemPitch = 0;
+	worldSub.SysMemSlicePitch = 0;
+	
+	theDevice->CreateBuffer(&worldBuffDesc, &worldSub, &pWorldBuffer);
 
 	D3D11_BUFFER_DESC sceneBuffDesc;
 	ZeroMemory(&sceneBuffDesc, sizeof(sceneBuffDesc));
@@ -584,9 +591,12 @@ bool DEMO_APP::Run()
 	memcpy(sceneMap.pData, scene, sizeof(scene));
 	devContext->Unmap(sceneMatrixBuffer, 0);
 
+	devContext->VSSetConstantBuffers(0, 1, &pWorldBuffer);
 	devContext->VSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
 	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
 	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
+	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
+	devContext->PSSetConstantBuffers(3, 1, &sceneMatrixBuffer);
 
 	devContext->RSSetState(pRasterState);
 
@@ -708,6 +718,7 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 	{
 		Translate(viewMatrix, 0.0f, -moveSpd * dt, 0.0f);
 	}
+
 	prevPoint = currPoint;
 }
 
@@ -722,26 +733,12 @@ void DEMO_APP::Resize()
 
 bool DEMO_APP::ShutDown()
 {
-	// TODO: PART 1 STEP 6
 	devContext->ClearState();
 
-	/*
-	constBuffer->Release();
-	vShader->Release();
-	pShader->Release();
-	vertexBuffer->Release();
-	inputLayout->Release();
-	targetView->Release();
-	backBuffer->Release();
-	swapChain ->Release();
-	devContext->Release();
-	theDevice ->Release();
-	*/
-
-	//Star.Shutdown();
 	Cube.Shutdown();
 	Quad.Shutdown();
 
+	SAFE_RELEASE(ptltBuff);
 	SAFE_RELEASE(ambientBuff);
 	SAFE_RELEASE(lightBuff);
 	SAFE_RELEASE(cubeTexture);
@@ -760,6 +757,7 @@ bool DEMO_APP::ShutDown()
 	SAFE_RELEASE(targetView);
 	SAFE_RELEASE(backBuffer);
 	SAFE_RELEASE(swapChain);
+	SAFE_RELEASE(pWorldBuffer);
 	SAFE_RELEASE(devContext);
 	SAFE_RELEASE(theDevice);
 

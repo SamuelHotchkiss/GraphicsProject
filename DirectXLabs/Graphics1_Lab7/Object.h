@@ -14,7 +14,7 @@ class Object
 {
 	ID3D11Buffer*				pVertBuffer			= nullptr;		// Vertex Buffer
 	ID3D11Buffer*				pIndexBuffer		= nullptr;		// Index Buffer
-	ID3D11Buffer*				pWorldBuffer		= nullptr;
+	//ID3D11Buffer*				pWorldBuffer		= nullptr;
 	ID3D11Resource*				pTexture			= nullptr;
 	//ID3D11Texture2D*			pTexture			= nullptr;
 	ID3D11SamplerState*			pSamplerState		= nullptr;
@@ -94,25 +94,11 @@ void Object::Initialize(const char* modelFile = nullptr, const wchar_t* textFile
 	//worldMatrix = XMMatrixIdentity();
 	//worldMatrix = XMMatrixTranslation(3.0f, 0.0f, 0.0f) * worldMatrix;
 
-	// Build World Matrix Buffer
-	D3D11_BUFFER_DESC worldBuffDesc;
-	ZeroMemory(&worldBuffDesc, sizeof(worldBuffDesc));
-	worldBuffDesc.Usage = D3D11_USAGE_DYNAMIC;
-	worldBuffDesc.ByteWidth = sizeof(M_4x4);
-	worldBuffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	worldBuffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
-	D3D11_SUBRESOURCE_DATA worldSub;
-	worldSub.pSysMem = &worldMatrix;
-	worldSub.SysMemPitch = 0;
-	worldSub.SysMemSlicePitch = 0;
-
-	theDevice->CreateBuffer(&worldBuffDesc, &worldSub, &pWorldBuffer);
 }
 
 void Object::Render()
 {
-	devContext->VSSetConstantBuffers(0, 1, &pWorldBuffer);
+	//devContext->VSSetConstantBuffers(0, 1, &pWorldBuffer);
 	devContext->PSSetSamplers(0, 1, &pSamplerState);
 	// Update
 
@@ -131,6 +117,7 @@ void Object::Render()
 
 	devContext->VSSetShader(pVShader, NULL, 0);
 	devContext->PSSetShader(pPShader, NULL, 0);
+	//if (pShaderResource)
 	devContext->PSSetShaderResources(0, 1, &pShaderResource);
 
 	devContext->IASetInputLayout(pInputLayout);
@@ -141,44 +128,6 @@ void Object::Render()
 
 void Object::PaintObject(const wchar_t* file)
 {
-	/*
-	D3D11_TEXTURE2D_DESC textDesc;
-	ZeroMemory(&textDesc, sizeof(textDesc));
-	textDesc.ArraySize = arrSize;
-	textDesc.Height = height;
-	textDesc.Width = width;
-	textDesc.MipLevels = mipLvls;
-	textDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	textDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	textDesc.SampleDesc.Count = 1;
-
-	D3D11_SUBRESOURCE_DATA* textData = new D3D11_SUBRESOURCE_DATA[mipLvls];
-	ZeroMemory(textData, sizeof(*textData));
-	for (unsigned int i = 0; i < mipLvls; i++)
-	{
-		textData[i].pSysMem = &texture[offsets[i]];
-		textData[i].SysMemPitch = 4 * (width >> i);
-	}
-
-	theDevice->CreateTexture2D(&textDesc, textData, &pTexture);
-	theDevice->CreateShaderResourceView(pTexture, NULL, &pShaderResource);
-
-	delete[] textData;
-	textData = nullptr;
-
-	D3D11_SAMPLER_DESC samplerDesc;
-	ZeroMemory(&samplerDesc, sizeof(samplerDesc));
-	samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.MinLOD = -FLT_MAX;
-	samplerDesc.MaxLOD = FLT_MAX;
-	samplerDesc.MaxAnisotropy = 1;
-	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-
-	theDevice->CreateSamplerState(&samplerDesc, &pSamplerState);
-	*/
 	CreateDDSTextureFromFile(theDevice, file, NULL, &pShaderResource);
 
 	D3D11_SAMPLER_DESC samplerDescription;
@@ -199,7 +148,7 @@ void Object::Shutdown()
 {
 	SAFE_RELEASE(pVertBuffer);
 	SAFE_RELEASE(pIndexBuffer);
-	SAFE_RELEASE(pWorldBuffer);
+	//SAFE_RELEASE(pWorldBuffer);
 	SAFE_RELEASE(pTexture);
 	SAFE_RELEASE(pSamplerState);
 	SAFE_RELEASE(pInputLayout);
