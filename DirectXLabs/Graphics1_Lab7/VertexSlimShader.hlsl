@@ -16,6 +16,7 @@ struct V_OUT
 	float4 posH : SV_POSITION;
 	float3 uvH  : UV;
 	float3 nrm  : NORMAL;
+	float4 posLT : LT_POSITION;
 };
 
 cbuffer OBJECT : register(b0)
@@ -40,6 +41,7 @@ V_OUT main(V_IN input)
 
 	localH = mul(localH, worldMatrix);
 	nrm = mul(nrm, worldMatrix);
+	output.posLT = localH;
 	// TODO: Move into view space, then projection space
 	localH = mul(localH, viewMatrix);
 	//nrm = mul(nrm, viewMatrix);
