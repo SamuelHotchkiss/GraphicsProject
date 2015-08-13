@@ -74,11 +74,13 @@ class DEMO_APP
 	ID3D11Buffer* lightBuff = nullptr;
 	ID3D11Buffer* ambientBuff = nullptr;
 	ID3D11Buffer* ptltBuff = nullptr;
+	ID3D11Buffer* spotBuff = nullptr;
 
 	float ambientLight[4];
 	DIR_LIGHT theLight;
 	//DIR_LIGHT myPointLight;
 	DIR_LIGHT thePtLight;
+	SPOT_LIGHT theSpotLight;
 
 public:
 
@@ -408,7 +410,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Cube.pIndices = Cube_indicies;
 	Cube.numIndices = 1692;
 
-	Cube.Initialize(nullptr, L"Tron.dds");
+	Cube.Initialize(nullptr, L"metallock.dds");
 
 	float length = 5.0f;
 
@@ -437,15 +439,15 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Quad.numVertices = 4;
 	Quad.pIndices = quadIndices;
 	Quad.numIndices = 6;
-	Quad.Initialize(nullptr, L"Tron.dds");
+	Quad.Initialize(nullptr, L"checkerboard.dds");
 	
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 0.0f);
 
-
-	theLight = DIR_LIGHT(1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f);
-	ambientLight[0] = 0.5f;
-	ambientLight[1] = 0.5f;
-	ambientLight[2] = 0.5f;
+#pragma region THE_LIGHTS
+	theLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 1.0f);
+	ambientLight[0] = 0.25f;
+	ambientLight[1] = 0.25f;
+	ambientLight[2] = 0.25f;
 	ambientLight[3] = 1.0f;
 
 	D3D11_BUFFER_DESC lightDesc;
@@ -478,7 +480,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	theDevice->CreateBuffer(&ambDesc, &ambSub, &ambientBuff);
 
-	thePtLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, 0.5f);
+	thePtLight = DIR_LIGHT(0.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.0f, 0.5f);
 
 	D3D11_BUFFER_DESC ptDesc;
 	ZeroMemory(&ptDesc, sizeof(ptDesc));
@@ -494,6 +496,22 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	ptSub.SysMemSlicePitch = 0;
 
 	theDevice->CreateBuffer(&ptDesc, &ptSub, &ptltBuff);
+
+	theSpotLight = SPOT_LIGHT(-0.5f, 5.0f, 2.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.99f);
+
+	D3D11_BUFFER_DESC spotDesc;
+	ZeroMemory(&spotDesc, sizeof(spotDesc));
+	spotDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	spotDesc.ByteWidth = sizeof(theSpotLight);
+	spotDesc.Usage = D3D11_USAGE_DYNAMIC;
+	spotDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+	D3D11_SUBRESOURCE_DATA spotSub;
+	ZeroMemory(&spotSub, sizeof(spotSub));
+	spotSub.pSysMem = &theSpotLight;
+
+	theDevice->CreateBuffer(&spotDesc, &spotSub, &spotBuff);
+#pragma endregion
 
 #endif
 
@@ -607,6 +625,12 @@ bool DEMO_APP::Run()
 	memcpy(ptLtMap.pData, &thePtLight, sizeof(thePtLight));
 	devContext->Unmap(ptltBuff, 0);
 
+	D3D11_MAPPED_SUBRESOURCE spotMap;
+	ZeroMemory(&spotMap, sizeof(spotMap));
+	devContext->Map(spotBuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &spotMap);
+	memcpy(spotMap.pData, &theSpotLight, sizeof(theSpotLight));
+	devContext->Unmap(spotBuff, 0);
+
 	scene[0] = Inverse4x4(viewMatrix);
 
 	D3D11_MAPPED_SUBRESOURCE sceneMap;
@@ -620,7 +644,7 @@ bool DEMO_APP::Run()
 	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
 	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
 	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
-	//devContext->PSSetConstantBuffers(3, 1, &sceneMatrixBuffer);
+	devContext->PSSetConstantBuffers(3, 1, &spotBuff);
 
 	devContext->RSSetState(pRasterState);
 
@@ -694,9 +718,9 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 	else if (GetAsyncKeyState('G') & 0x1)
 	{
 		theLight.color[0] = 1.0f;
-		theLight.color[1] = 1.0f;
+		theLight.color[1] = 0.0f;
 		theLight.color[2] = 0.0f;
-		theLight.color[3] = 0.0f;
+		theLight.color[3] = 1.0f;
 	}
 
 	if (GetAsyncKeyState('Q') & 0x1)
@@ -708,9 +732,9 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 	}
 	else if (GetAsyncKeyState('E') & 0x1)
 	{
-		ambientLight[0] = 0.5f;
-		ambientLight[1] = 0.5f;
-		ambientLight[2] = 0.5f;
+		ambientLight[0] = 0.25f;
+		ambientLight[1] = 0.25f;
+		ambientLight[2] = 0.25f;
 		ambientLight[3] = 1.0f;
 	}
 
@@ -762,6 +786,7 @@ bool DEMO_APP::ShutDown()
 	Cube.Shutdown();
 	Quad.Shutdown();
 
+	SAFE_RELEASE(spotBuff);
 	SAFE_RELEASE(ptltBuff);
 	SAFE_RELEASE(ambientBuff);
 	SAFE_RELEASE(lightBuff);

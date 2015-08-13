@@ -45,8 +45,8 @@ struct VERTEX
 struct DIR_LIGHT
 {
 	float direction[3];
-	float color[4];
 	float padding = 0.0f;
+	float color[4];
 
 	DIR_LIGHT(float r = 0.0f, float g = 0.0f, float b = 0.0f, float a = 1.0f,
 		float x = 0.0f, float y = 0.0f, float z = 0.0f)
@@ -63,6 +63,26 @@ struct DIR_LIGHT
 		//CreateNormal();
 	}
 
+};
+
+struct SPOT_LIGHT
+{
+	float position[3];
+	float coneRatio;
+	float coneDir[3];
+	float color[4];
+	float padding = 0.0f;
+
+	SPOT_LIGHT(float x = 0, float y = 0, float z = 0,
+			   float dirX = 0, float dirY = 0, float dirZ = 0,
+			   float r = 0.0f, float g = 0.0f, float b = 0.0f, float a = 1.0f,
+			   float ratio = 0.0f)
+	{
+		position[0] = x; position[1] = y; position[2] = z;
+		coneDir[0] = dirX; coneDir[1] = dirY; coneDir[2] = dirZ;
+		color[0] = a; color[1] = r; color[2] = g; color[3] = b;
+		coneRatio = ratio;
+	}
 };
 
 struct M_3x3
