@@ -60,5 +60,6 @@
     <None Include="VertexSlimShader.csh" />
     <None Include="StarPixel.csh" />
     <None Include="StarShader.csh" />
+    <None Include="Lighting.hlsli" />
   </ItemGroup>
 </Project>

@@ -48,15 +48,6 @@ struct DIR_LIGHT
 	float color[4];
 	float padding = 0.0f;
 
-	void CreateNormal()
-	{
-		float norm = sqrt((direction[0] * direction[0]) + (direction[1] * direction[1]) + (direction[2] * direction[2]) + (direction[3] * direction[3]));
-		direction[0] = direction[0] / norm;
-		direction[1] = direction[1] / norm;
-		direction[2] = direction[2] / norm;
-		//direction[3] = direction[3] / norm;
-	}
-
 	DIR_LIGHT(float r = 0.0f, float g = 0.0f, float b = 0.0f, float a = 1.0f,
 		float x = 0.0f, float y = 0.0f, float z = 0.0f)
 	{

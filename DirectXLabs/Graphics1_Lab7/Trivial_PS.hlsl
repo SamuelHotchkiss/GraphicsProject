@@ -30,18 +30,31 @@ cbuffer POINT_LIGHT : register (b2)
 float4 main( V_IN input ) : SV_TARGET
 {
 	float4 baseColor = baseTexture.Sample(filters[0], input.uvH.xy);
-	float4 finalColor = baseColor;
+
+	//float4 ambResult;
+	float4 diffResult;
+	float4 specResult;
+
+	float3 wnrm = normalize(input.nrm);
+	//DIRECTION LIGHT
+	float3 ldir = -normalize(lightDir);
+
+	float lRatio = clamp(dot(ldir, wnrm), 0, 1);
+
+	//POINT LIGHT
+	float3 pldir = -normalize(ptLightPos - input.posH.xyz);
+	float plRatio = clamp(dot(pldir, wnrm), 0, 1);
+	//SPOTLIGHT
+
+	diffResult = (baseColor * lightColor * lRatio) + (baseColor * ambientColor) + (baseColor * ptLightColor * plRatio) /*+ sColor*/;
+
+	float4 finalColor = saturate(diffResult);
 	//finalColor.a = baseColor.b;
 	//finalColor.r = baseColor.g;
 	//finalColor.g = baseColor.r;
 	//finalColor.b = baseColor.a;
 
-	float3 ldir = -normalize(lightDir);
-	float3 wnrm = normalize(input.nrm);
-
-
-
-	finalColor = saturate((clamp(dot(ldir, wnrm), 0, 1) * finalColor * lightColor) + (finalColor * ambientColor));
+	/*finalColor = saturate((clamp(dot(ldir, wnrm), 0, 1) * finalColor * lightColor) + (finalColor * ambientColor));*/
 
 	return finalColor;
 }

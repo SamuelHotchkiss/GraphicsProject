@@ -221,6 +221,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Lighting.hlsli" />
     <None Include="StarPixel.csh" />
     <None Include="StarShader.csh" />
     <None Include="Trivial_PS.csh" />

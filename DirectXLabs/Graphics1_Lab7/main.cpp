@@ -78,6 +78,7 @@ class DEMO_APP
 	float ambientLight[4];
 	DIR_LIGHT theLight;
 	//DIR_LIGHT myPointLight;
+	DIR_LIGHT thePtLight;
 
 public:
 
@@ -477,6 +478,23 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	theDevice->CreateBuffer(&ambDesc, &ambSub, &ambientBuff);
 
+	thePtLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, 0.5f);
+
+	D3D11_BUFFER_DESC ptDesc;
+	ZeroMemory(&ptDesc, sizeof(ptDesc));
+	ptDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	ptDesc.ByteWidth = sizeof(thePtLight);
+	ptDesc.Usage = D3D11_USAGE_DYNAMIC;
+	ptDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+	D3D11_SUBRESOURCE_DATA ptSub;
+	ZeroMemory(&ptSub, sizeof(ptSub));
+	ptSub.pSysMem = &thePtLight;
+	ptSub.SysMemPitch = 0;
+	ptSub.SysMemSlicePitch = 0;
+
+	theDevice->CreateBuffer(&ptDesc, &ptSub, &ptltBuff);
+
 #endif
 
 
@@ -583,6 +601,12 @@ bool DEMO_APP::Run()
 	memcpy(lightMap.pData, &theLight, sizeof(theLight));
 	devContext->Unmap(lightBuff, 0);
 
+	D3D11_MAPPED_SUBRESOURCE ptLtMap;
+	ZeroMemory(&ptLtMap, sizeof(ptLtMap));
+	devContext->Map(ptltBuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &ptLtMap);
+	memcpy(ptLtMap.pData, &thePtLight, sizeof(thePtLight));
+	devContext->Unmap(ptltBuff, 0);
+
 	scene[0] = Inverse4x4(viewMatrix);
 
 	D3D11_MAPPED_SUBRESOURCE sceneMap;
@@ -596,7 +620,7 @@ bool DEMO_APP::Run()
 	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
 	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
 	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
-	devContext->PSSetConstantBuffers(3, 1, &sceneMatrixBuffer);
+	//devContext->PSSetConstantBuffers(3, 1, &sceneMatrixBuffer);
 
 	devContext->RSSetState(pRasterState);
 
