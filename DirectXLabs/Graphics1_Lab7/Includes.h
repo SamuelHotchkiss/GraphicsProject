@@ -32,8 +32,8 @@ using namespace DirectX;
 
 #include "Trivial_PS.csh"
 #include "VertexSlimShader.csh"
-#include "StarShader.csh"
-#include "StarPixel.csh"
+#include "SkyVShader.csh"
+#include "SkyPShader.csh"
 
 ID3D11Device*					theDevice;			// used for  creating stuff
 ID3D11DeviceContext*			devContext;			// binds objects to the pipeline

@@ -49,17 +49,16 @@
     <FxCompile Include="Trivial_PS.hlsl" />
     <FxCompile Include="Trivial_VS.hlsl" />
     <FxCompile Include="VertexSlimShader.hlsl" />
-    <FxCompile Include="StarShader.hlsl" />
-    <FxCompile Include="StarPixel.hlsl" />
-    <FxCompile Include="OBJVShader.hlsl" />
-    <FxCompile Include="OBJPShader.hlsl" />
+    <FxCompile Include="SkyVShader.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="SkyPShader.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Trivial_PS.csh" />
     <None Include="Trivial_VS.csh" />
     <None Include="VertexSlimShader.csh" />
-    <None Include="StarPixel.csh" />
-    <None Include="StarShader.csh" />
-    <None Include="Lighting.hlsli" />
   </ItemGroup>
 </Project>

@@ -118,6 +118,7 @@ void Object::Initialize(const char* modelFile = nullptr, const wchar_t* textFile
 	indexData.SysMemSlicePitch = 0;
 
 	theDevice->CreateBuffer(&indexBufferDesc, &indexData, &pIndexBuffer);
+
 }
 
 void Object::Render()
@@ -150,7 +151,7 @@ void Object::Render()
 
 void Object::PaintObject(const wchar_t* file)
 {
-	CreateDDSTextureFromFile(theDevice, file, NULL, &pShaderResource);
+	CreateDDSTextureFromFile(theDevice, file, &pTexture, &pShaderResource);
 
 	D3D11_SAMPLER_DESC samplerDescription;
 	ZeroMemory(&samplerDescription, sizeof(samplerDescription));

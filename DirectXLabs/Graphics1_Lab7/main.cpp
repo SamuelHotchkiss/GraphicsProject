@@ -55,6 +55,7 @@ class DEMO_APP
 	Object Quad;
 	//Object Cube;
 	Object Pyramid;
+	Object SkyBox;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -372,6 +373,17 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	indexData.SysMemSlicePitch = 0;
 #endif
 
+	theDevice->CreateVertexShader(SkyVShader, sizeof(SkyVShader), nullptr, &SkyBox.pVShader);
+	theDevice->CreatePixelShader(SkyPShader, sizeof(SkyPShader), nullptr, &SkyBox.pPShader);
+
+	D3D11_INPUT_ELEMENT_DESC skyLayout[] = 
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+
+	theDevice->CreateInputLayout(skyLayout, 1, SkyVShader, sizeof(SkyVShader), &SkyBox.pInputLayout);
+
+	SkyBox.Initialize("sky.obj", L"SunsetSkybox.dds");
 
 #if 1
 	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Pyramid.pVShader);
@@ -537,6 +549,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	};
 
 	cameraMatrix = Inverse4x4(viewMatrix);
+	SkyBox.worldMatrix.M[3][0] = viewMatrix.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = viewMatrix.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = viewMatrix.M[3][2];
 
 	scene[0] = /*cameraMatrix*/ viewMatrix;
 	scene[1] = projMatrix;
@@ -607,6 +622,10 @@ bool DEMO_APP::Run()
 
 	MoveCamera(5.0f, 200.0f, dt);
 
+	SkyBox.worldMatrix.M[3][0] = viewMatrix.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = viewMatrix.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = viewMatrix.M[3][2];
+
 	D3D11_MAPPED_SUBRESOURCE ambMap;
 	ZeroMemory(&ambMap, sizeof(ambMap));
 	devContext->Map(ambientBuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &ambMap);
@@ -646,7 +665,6 @@ bool DEMO_APP::Run()
 	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
 	devContext->PSSetConstantBuffers(3, 1, &spotBuff);
 
-	devContext->RSSetState(pRasterState);
 
 #if 0
 	worldMatrix = RotateY(50.0f * dt) * worldMatrix;
@@ -676,7 +694,12 @@ bool DEMO_APP::Run()
 	devContext->DrawIndexed(60, 0, 0);
 #endif
 	Pyramid.worldMatrix = RotateY(50.0f * dt) * Pyramid.worldMatrix;
+	//SKYBOX RENDERING/////
+	//SkyBox.Render();
+	//devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	///////////////////////
 
+	devContext->RSSetState(pRasterState);
 	//Star.Render();
 	//Cube.Render();
 	Pyramid.Render();
@@ -787,6 +810,7 @@ bool DEMO_APP::ShutDown()
 	//Cube.Shutdown();
 	Quad.Shutdown();
 	Pyramid.Shutdown();
+	SkyBox.Shutdown();
 
 	SAFE_RELEASE(spotBuff);
 	SAFE_RELEASE(ptltBuff);
