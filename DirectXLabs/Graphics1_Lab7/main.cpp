@@ -53,8 +53,8 @@ class DEMO_APP
 
 	//Object Star;
 	Object Quad;
-	Object Cube;
-	//Object PointLight;
+	//Object Cube;
+	Object Pyramid;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -374,20 +374,19 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 #if 1
-	// TODO: PART 2 STEP 7
-	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Cube.pVShader);
-	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Cube.pPShader);
+	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Pyramid.pVShader);
+	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Pyramid.pPShader);
 	
 	D3D11_INPUT_ELEMENT_DESC vLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "UVW", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
 	// TODO: PART 2 STEP 8b
 	unsigned int numElements = ARRAYSIZE(vLayout);
-	theDevice->CreateInputLayout(vLayout, numElements, VertexSlimShader, sizeof(VertexSlimShader), &Cube.pInputLayout);
+	theDevice->CreateInputLayout(vLayout, numElements, VertexSlimShader, sizeof(VertexSlimShader), &Pyramid.pInputLayout);
 #if 0
 	D3D11_INPUT_ELEMENT_DESC starLayout[] =
 	{
@@ -405,21 +404,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Star.Initialize();
 #endif
 
-	Cube.pVertices = Cube_data;
-	Cube.numVertices = 776;
-	Cube.pIndices = Cube_indicies;
-	Cube.numIndices = 1692;
-
-	Cube.Initialize(nullptr, L"metallock.dds");
+	//Cube.pVertices = Cube_data;
+	//Cube.numVertices = 776;
+	//Cube.pIndices = Cube_indicies;
+	//Cube.numIndices = 1692;
+	//
+	Pyramid.Initialize("test_pyramid_triangle.obj", L"metallock.dds");
 
 	float length = 5.0f;
 
-	OBJ_VERT quad[4] =
+	VertexOBJ quad[4] =
 	{
-		{ -length, 0.0f, length, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
-		{ length, 0.0f, length, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
-		{ -length, 0.0f, -length, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f },
-		{ length, 0.0f, -length, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f }
+		{ -length, 0.0f, length, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f },
+		{ length, 0.0f, length, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f },
+		{ -length, 0.0f, -length, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
+		{ length, 0.0f, -length, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f }
 	};
 	
 	unsigned int quadIndices[6] =
@@ -434,7 +433,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Quad.pPShader);
 	
 	theDevice->CreateInputLayout(vLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Quad.pInputLayout);
-	
+	//Quad.pInputLayout = Cube.pInputLayout;
+
 	Quad.pVertices = quad;
 	Quad.numVertices = 4;
 	Quad.pIndices = quadIndices;
@@ -675,10 +675,11 @@ bool DEMO_APP::Run()
 
 	devContext->DrawIndexed(60, 0, 0);
 #endif
-	Cube.worldMatrix = RotateY(50.0f * dt) * Cube.worldMatrix;
+	Pyramid.worldMatrix = RotateY(50.0f * dt) * Pyramid.worldMatrix;
 
 	//Star.Render();
-	Cube.Render();
+	//Cube.Render();
+	Pyramid.Render();
 	Quad.Render();
 
 	swapChain->Present(0, 0);
@@ -783,8 +784,9 @@ bool DEMO_APP::ShutDown()
 {
 	devContext->ClearState();
 
-	Cube.Shutdown();
+	//Cube.Shutdown();
 	Quad.Shutdown();
+	Pyramid.Shutdown();
 
 	SAFE_RELEASE(spotBuff);
 	SAFE_RELEASE(ptltBuff);

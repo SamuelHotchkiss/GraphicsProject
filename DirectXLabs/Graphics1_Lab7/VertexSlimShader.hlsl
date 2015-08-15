@@ -7,14 +7,14 @@ struct V_IN
 	//float4 uvL : UV;
 
 	float3 posL : POSITION;
-	float3 uvw  : UVW;
+	float2 uv  : UV;
 	float3 nrm  : NORMAL;
 };
 
 struct V_OUT
 {
 	float4 posH : SV_POSITION;
-	float3 uvH  : UV;
+	float2 uv  : UV;
 	float3 nrm  : NORMAL;
 	float4 posLT : LT_POSITION;
 };
@@ -50,7 +50,7 @@ V_OUT main(V_IN input)
 
 	output.posH = localH;
 	//output.colH = float4(1.0f,0.0f,0.0f,1.0f);
-	output.uvH = input.uvw;
+	output.uv = input.uv;
 	output.nrm = nrm;
 
 	return output;

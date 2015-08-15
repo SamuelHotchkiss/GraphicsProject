@@ -1,7 +1,7 @@
 struct V_IN
 {
 	float4 posH : SV_POSITION;
-	float3 uvH  : UV;
+	float2 uv  : UV;
 	float3 nrm  : NORMAL;
 	float4 posLT : LT_POSITION;
 };
@@ -41,39 +41,34 @@ cbuffer SPOT_LIGHT : register (b3)
 
 float4 main( V_IN input ) : SV_TARGET
 {
-	float4 baseColor = baseTexture.Sample(filters[0], input.uvH.xy);
+	float4 baseColor = baseTexture.Sample(filters[0], input.uv.xy);
 
-	//float4 attResult;
 	float4 dirDiffResult;
 	float4 ptDiffResult;
 	float4 spotDiffResult;
 
-	float4 specResult;
+	float4 dirSpecResult;
+	float4 ptSpecResult;
+	float4 spotSpecResult;
 
 	float3 wnrm = normalize(input.nrm);
-	//DIRECTION LIGHT
+	//DIRECTIONAL LIGHT ////////////////////////////////////////////////////////////////////////////////
 	float3 ldir = -normalize(lightDir);
-
 	float lRatio = saturate(dot(ldir, wnrm));
+	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	//POINT LIGHT
+	//POINT LIGHT //////////////////////////////////////////////////////////////////////////////////////
 	float3 pldir = normalize(ptLightPos - input.posLT.xyz);
 	float plRatio = saturate(dot(pldir, wnrm));
 	
 	float theLength = length(ptLightPos - input.posLT.xyz);
 	float attRatio = theLength / 3;
 	float theClamp = saturate(attRatio);
-	float attenuation = 1.0f - theClamp;//clamp((length(ptLightPos - input.posH.xyz) / 10000), 0, 1);
+	float attenuation = 1.0f - theClamp;
 	attenuation *= attenuation;
-	//SPOTLIGHT
-	/*
-		LIGHTDIR = NORMALIZE( LIGHTPOS – SURFACEPOS ) )
-		SURFACERATIO = CLAMP( DOT( -LIGHTDIR, CONEDIR ) )
-		SPOTFACTOR = ( SURFACERATIO > CONERATIO ) ? 1 : 0
-		LIGHTRATIO = CLAMP( DOT( LIGHTDIR, SURFACENORMAL ) )
-		RESULT = SPOTFACTOR * LIGHTRATIO * LIGHTCOLOR * SURFACECOLOR
-	*/
-	
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//SPOTLIGHT ////////////////////////////////////////////////////////////////////////////////////////
 	float3 spldir = normalize(spotLightPos - input.posLT.xyz);
 	float splRatio = saturate(dot(spldir, wnrm));
 
@@ -82,7 +77,9 @@ float4 main( V_IN input ) : SV_TARGET
 	float spotFactor = (surfaceRatio > coneRatio) ? 1 : 0;
 	float spotAttenuation = 1.0f - saturate((coneRatio - surfaceRatio));
 	spotAttenuation *= spotAttenuation;
+	////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	//BRINGING IT ALL TOGETHER
 	dirDiffResult = (baseColor * lightColor * lRatio) + (baseColor * ambientColor);
 	ptDiffResult = (baseColor * ptLightColor * plRatio) + (baseColor * ambientColor);
 	ptDiffResult *= attenuation;
@@ -90,12 +87,6 @@ float4 main( V_IN input ) : SV_TARGET
 	spotDiffResult *= spotAttenuation;
 
 	float4 finalColor = saturate(dirDiffResult + ptDiffResult + spotDiffResult);
-	//finalColor.a = baseColor.b;
-	//finalColor.r = baseColor.g;
-	//finalColor.g = baseColor.r;
-	//finalColor.b = baseColor.a;
-
-	/*finalColor = saturate((clamp(dot(ldir, wnrm), 0, 1) * finalColor * lightColor) + (finalColor * ambientColor));*/
 
 	return finalColor;
 }
