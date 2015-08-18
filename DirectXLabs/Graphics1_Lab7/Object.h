@@ -68,12 +68,13 @@ public:
 	void Initialize(const char* modelFile, const wchar_t* textFile);
 	void Render();
 	void Shutdown();
+	void PaintCube(const wchar_t* file);
 };
 
 void Object::Initialize(const char* modelFile = nullptr, const wchar_t* textFile = nullptr)
 {
 	// Initialize World Matrix
-	Translate(worldMatrix, 0.0f, 0.0f, 3.0f);
+	//Translate(worldMatrix, 0.0f, 0.0f, 3.0f);
 
 	//numVertices = mesh.size();
 	if (modelFile)
@@ -119,6 +120,19 @@ void Object::Initialize(const char* modelFile = nullptr, const wchar_t* textFile
 
 	theDevice->CreateBuffer(&indexBufferDesc, &indexData, &pIndexBuffer);
 
+	D3D11_SAMPLER_DESC samplerDescription;
+	ZeroMemory(&samplerDescription, sizeof(samplerDescription));
+	samplerDescription.Filter = D3D11_FILTER_ANISOTROPIC;
+	samplerDescription.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDescription.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDescription.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDescription.MinLOD = -FLT_MAX;
+	samplerDescription.MaxLOD = FLT_MAX;
+	samplerDescription.MaxAnisotropy = 1;
+	samplerDescription.ComparisonFunc = D3D11_COMPARISON_NEVER;
+
+	theDevice->CreateSamplerState(&samplerDescription, &pSamplerState);
+
 }
 
 void Object::Render()
@@ -152,19 +166,18 @@ void Object::Render()
 void Object::PaintObject(const wchar_t* file)
 {
 	CreateDDSTextureFromFile(theDevice, file, &pTexture, &pShaderResource);
+}
 
-	D3D11_SAMPLER_DESC samplerDescription;
-	ZeroMemory(&samplerDescription, sizeof(samplerDescription));
-	samplerDescription.Filter = D3D11_FILTER_ANISOTROPIC;
-	samplerDescription.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDescription.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDescription.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDescription.MinLOD = -FLT_MAX;
-	samplerDescription.MaxLOD = FLT_MAX;
-	samplerDescription.MaxAnisotropy = 1;
-	samplerDescription.ComparisonFunc = D3D11_COMPARISON_NEVER;
+void Object::PaintCube(const wchar_t* file)
+{
+	CreateDDSTextureFromFile(theDevice, file, &pTexture, nullptr);
 
-	theDevice->CreateSamplerState(&samplerDescription, &pSamplerState);
+	D3D11_SHADER_RESOURCE_VIEW_DESC shadeDesc;
+	ZeroMemory(&shadeDesc, sizeof(shadeDesc));
+	shadeDesc.Texture2D.MostDetailedMip = 0;
+	shadeDesc.Texture2D.MipLevels = 1;
+	shadeDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+	theDevice->CreateShaderResourceView(pTexture, &shadeDesc, &pShaderResource);
 }
 
 void Object::Shutdown()

@@ -70,6 +70,7 @@ class DEMO_APP
 	POINT prevPoint, currPoint;
 
 	ID3D11RasterizerState* pRasterState;
+	ID3D11RasterizerState* pOtherState;
 
 
 	ID3D11Buffer* lightBuff = nullptr;
@@ -378,12 +379,16 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	D3D11_INPUT_ELEMENT_DESC skyLayout[] = 
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
-	theDevice->CreateInputLayout(skyLayout, 1, SkyVShader, sizeof(SkyVShader), &SkyBox.pInputLayout);
+	theDevice->CreateInputLayout(skyLayout, ARRAYSIZE(skyLayout), SkyVShader, sizeof(SkyVShader), &SkyBox.pInputLayout);
 
-	SkyBox.Initialize("sky.obj", L"SunsetSkybox.dds");
+	//SkyBox.PaintCube(L"SunsetSkybox.dds");
+	SkyBox.Initialize("sky.obj", L"SkyboxOcean.dds");
+
 
 #if 1
 	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Pyramid.pVShader);
@@ -596,6 +601,14 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//rasterDesc.MultisampleEnable = false;
 
 	theDevice->CreateRasterizerState(&rasterDesc, &pRasterState);
+
+	CD3D11_RASTERIZER_DESC otherDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
+	otherDesc.FrontCounterClockwise = FALSE;
+	otherDesc.CullMode = D3D11_CULL_FRONT;
+	otherDesc.AntialiasedLineEnable = true;
+	//rasterDesc.MultisampleEnable = false;
+
+	theDevice->CreateRasterizerState(&otherDesc, &pOtherState);
 #endif
 
 	
@@ -622,9 +635,6 @@ bool DEMO_APP::Run()
 
 	MoveCamera(5.0f, 200.0f, dt);
 
-	SkyBox.worldMatrix.M[3][0] = viewMatrix.M[3][0];
-	SkyBox.worldMatrix.M[3][1] = viewMatrix.M[3][1];
-	SkyBox.worldMatrix.M[3][2] = viewMatrix.M[3][2];
 
 	D3D11_MAPPED_SUBRESOURCE ambMap;
 	ZeroMemory(&ambMap, sizeof(ambMap));
@@ -695,11 +705,19 @@ bool DEMO_APP::Run()
 #endif
 	Pyramid.worldMatrix = RotateY(50.0f * dt) * Pyramid.worldMatrix;
 	//SKYBOX RENDERING/////
-	//SkyBox.Render();
-	//devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	devContext->RSSetState(pOtherState);
+	//SkyBox.worldMatrix = viewMatrix;
+
+	SkyBox.worldMatrix.M[3][0] = viewMatrix.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = viewMatrix.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = viewMatrix.M[3][2];
+
+	SkyBox.Render();
+	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 	///////////////////////
 
 	devContext->RSSetState(pRasterState);
+
 	//Star.Render();
 	//Cube.Render();
 	Pyramid.Render();
@@ -812,6 +830,7 @@ bool DEMO_APP::ShutDown()
 	Pyramid.Shutdown();
 	SkyBox.Shutdown();
 
+	SAFE_RELEASE(pOtherState);
 	SAFE_RELEASE(spotBuff);
 	SAFE_RELEASE(ptltBuff);
 	SAFE_RELEASE(ambientBuff);
