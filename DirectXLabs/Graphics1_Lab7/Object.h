@@ -60,6 +60,8 @@ public:
 
 	ID3D11VertexShader*			pVShader = nullptr;		// This object's personal vertex shader CREATE EXTERNALLY
 	ID3D11PixelShader*			pPShader = nullptr;		// This object's personal pixel shader CREATE EXTERNALLY
+	ID3D11GeometryShader*		pGShader = nullptr;		// This object's personal geometry shader CREATE EXTERNALLY
+
 	ID3D11ShaderResourceView*	pShaderResource = nullptr;		// Resource required by shader (usually some sort of texture)
 
 	vector<VertexOBJ> mesh;
@@ -202,6 +204,11 @@ void Object::Render()
 	devContext->IASetVertexBuffers(0, 1, &pVertBuffer, &stride, &offset);
 	devContext->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R32_UINT, offset);
 
+	if (pGShader)
+	{
+		devContext->GSSetConstantBuffers(0, 1, &pWorldBuffer);
+		devContext->GSSetShader(pGShader, NULL, 0);
+	}
 	devContext->VSSetShader(pVShader, NULL, 0);
 	devContext->PSSetShader(pPShader, NULL, 0);
 
@@ -235,6 +242,7 @@ void Object::Shutdown()
 	SAFE_RELEASE(pVShader);
 	SAFE_RELEASE(pPShader);
 	SAFE_RELEASE(pShaderResource);
+	SAFE_RELEASE(pGShader);
 }
 
 void Object::LoadModelFromFile(const wchar_t* file)

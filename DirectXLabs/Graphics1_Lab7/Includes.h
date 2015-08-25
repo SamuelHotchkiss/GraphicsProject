@@ -35,6 +35,7 @@ using namespace DirectX;
 #include "SkyVShader.csh"
 #include "SkyPShader.csh"
 #include "InstanceVShader.csh"
+#include "QuadCreator.csh"
 
 ID3D11Device*					theDevice;			// used for  creating stuff
 ID3D11DeviceContext*			devContext;			// binds objects to the pipeline

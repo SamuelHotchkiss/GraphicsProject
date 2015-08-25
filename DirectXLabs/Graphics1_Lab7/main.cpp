@@ -56,6 +56,7 @@ class DEMO_APP
 	//Object Cube;
 	Object Pyramid;
 	Object SkyBox;
+	Object Triangle;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -154,7 +155,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	swapDescription.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapDescription.OutputWindow = window;
 	swapDescription.SampleDesc.Count = 4;
-	swapDescription.SampleDesc.Quality = 0;
+	swapDescription.SampleDesc.Quality = D3D11_CENTER_MULTISAMPLE_PATTERN;
 	swapDescription.Windowed = true;
 
 	// TODO: PART 1 STEP 3b
@@ -187,7 +188,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	depthDescription.ArraySize = 1;
 	depthDescription.Format = DXGI_FORMAT_D32_FLOAT;
 	depthDescription.SampleDesc.Count = 4;
-	depthDescription.SampleDesc.Quality = 0;
+	depthDescription.SampleDesc.Quality = D3D11_CENTER_MULTISAMPLE_PATTERN;
 	depthDescription.Usage = D3D11_USAGE_DEFAULT;
 	depthDescription.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	depthDescription.CPUAccessFlags = 0;
@@ -317,6 +318,30 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Quad.Initialize(nullptr, L"checkerboard.dds");
 
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 3.0f);
+
+	VertexOBJ tri[3] = 
+	{
+		{-length, length, length, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f },
+		{ length, 0.0f, length, 1.1f, 1.1f, 0.0f, 0.0f, 1.0f },
+		{-length, 0.0f, length, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f }
+	};
+	unsigned int triIndices[3] =
+	{
+		0, 1, 2
+	};
+
+	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Triangle.pVShader);
+	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Triangle.pPShader);
+	//theDevice->CreateGeometryShader(QuadCreator, sizeof(QuadCreator), nullptr, &Triangle.pGShader);
+
+	theDevice->CreateInputLayout(skyLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Triangle.pInputLayout);
+
+	Triangle.pVertices = tri;
+	Triangle.numVertices = 3;
+	Triangle.pIndices = triIndices;
+	Triangle.numIndices = 3;
+	Triangle.Initialize(nullptr, L"Checkerboard.dds");
+	Translate(Triangle.worldMatrix, 0.0f, -1.0f, 3.0f);
 
 #pragma region THE_LIGHTS
 	theLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 1.0f);
@@ -568,6 +593,7 @@ bool DEMO_APP::Run()
 
 	Pyramid.Render();
 	Quad.Render();
+	Triangle.Render();
 
 	swapChain->Present(0, 0);
 
@@ -723,6 +749,7 @@ bool DEMO_APP::ShutDown()
 	Quad.Shutdown();
 	Pyramid.Shutdown();
 	SkyBox.Shutdown();
+	Triangle.Shutdown();
 
 	SAFE_RELEASE(pOtherState);
 	SAFE_RELEASE(spotBuff);
