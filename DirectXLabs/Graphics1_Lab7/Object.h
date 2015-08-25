@@ -40,10 +40,10 @@ bool VertexOBJ::operator==(VertexOBJ vert)
 
 class Object
 {
-	ID3D11Buffer*				pVertBuffer			= nullptr;		// Vertex Buffer
-	ID3D11Buffer*				pIndexBuffer		= nullptr;		// Index Buffer
-	ID3D11Resource*				pTexture			= nullptr;
-	ID3D11SamplerState*			pSamplerState		= nullptr;
+	ID3D11Buffer*				pVertBuffer = nullptr;		// Vertex Buffer
+	ID3D11Buffer*				pIndexBuffer = nullptr;		// Index Buffer
+	ID3D11Resource*				pTexture = nullptr;
+	ID3D11SamplerState*			pSamplerState = nullptr;
 
 	//thread* modelThread = nullptr;
 	//thread* textureThread = nullptr;
@@ -56,23 +56,26 @@ class Object
 	static void WeaveThread(void*, const wchar_t*);
 public:
 
-	ID3D11InputLayout*			pInputLayout		= nullptr;		// Object's input layout CREATE EXTERNALLY
+	ID3D11InputLayout*			pInputLayout = nullptr;		// Object's input layout CREATE EXTERNALLY
 
-	ID3D11VertexShader*			pVShader			= nullptr;		// This object's personal vertex shader CREATE EXTERNALLY
-	ID3D11PixelShader*			pPShader			= nullptr;		// This object's personal pixel shader CREATE EXTERNALLY
-	ID3D11ShaderResourceView*	pShaderResource		= nullptr;		// Resource required by shader (usually some sort of texture)
+	ID3D11VertexShader*			pVShader = nullptr;		// This object's personal vertex shader CREATE EXTERNALLY
+	ID3D11PixelShader*			pPShader = nullptr;		// This object's personal pixel shader CREATE EXTERNALLY
+	ID3D11ShaderResourceView*	pShaderResource = nullptr;		// Resource required by shader (usually some sort of texture)
 
 	vector<VertexOBJ> mesh;
 	vector<unsigned int> meshIndices;
 
 	bool instanced = false;
 
-	const VertexOBJ*			pVertices			= nullptr;		// The actual vertices so we can fill our vertex buffer
-	const unsigned int*			pIndices			= nullptr;		// The actual indices so we can fill our index buffer
-	unsigned int				numVertices			= 0;			// The number of vertices
-	unsigned int				numIndices			= 0;			// The number of indices
+	const VertexOBJ*			pVertices = nullptr;		// The actual vertices so we can fill our vertex buffer
+	const unsigned int*			pIndices = nullptr;		// The actual indices so we can fill our index buffer
+	unsigned int				numVertices = 0;			// The number of vertices
+	unsigned int				numIndices = 0;			// The number of indices
 
 	M_4x4						worldMatrix;
+	//M_4x4*						worldMatrices = nullptr;
+	M_4x4						worldMatrices[4];
+	unsigned int				numInstances = 1;
 
 	void Initialize(const wchar_t* modelFile, const wchar_t* textFile);
 	void Render();
@@ -81,9 +84,9 @@ public:
 
 void Object::Initialize(const wchar_t* modelFile = nullptr, const wchar_t* textFile = nullptr)
 {
-	
+
 	// (modelFile)
-		//LoadModelFromFile(modelFile);
+	//LoadModelFromFile(modelFile);
 	if (textFile)
 		PaintObject(textFile);
 
@@ -143,6 +146,30 @@ void Object::Initialize(const wchar_t* modelFile = nullptr, const wchar_t* textF
 
 	theDevice->CreateSamplerState(&samplerDescription, &pSamplerState);
 
+	//Build Instance Buffer
+	if (instanced)
+	{
+		//worldMatrices = new M_4x4[numInstances];
+
+		Translate(worldMatrices[0], 0.0f, 0.0f, 3.0f);
+		Translate(worldMatrices[1], 2.0f, 0.0f, 0.0f);
+		Translate(worldMatrices[2], -2.0f, 0.0f, 0.0f);
+		Translate(worldMatrices[3], 0.0f, 2.0f, 0.0f);
+
+		D3D11_BUFFER_DESC instDesc;
+		ZeroMemory(&instDesc, sizeof(instDesc));
+		instDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		instDesc.Usage = D3D11_USAGE_DYNAMIC;
+		instDesc.ByteWidth = sizeof(M_4x4) * numInstances;
+		instDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+		D3D11_SUBRESOURCE_DATA instSub;
+		instSub.pSysMem = &worldMatrices;
+		instSub.SysMemPitch = 0;
+		instSub.SysMemSlicePitch = 0;
+
+		theDevice->CreateBuffer(&instDesc, &instSub, &instancedBuffer);
+	}
 }
 
 void Object::Render()
@@ -153,9 +180,22 @@ void Object::Render()
 	D3D11_MAPPED_SUBRESOURCE worldMap;
 	ZeroMemory(&worldMap, sizeof(worldMap));
 
-	devContext->Map(pWorldBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &worldMap);
-	memcpy(worldMap.pData, &worldMatrix, sizeof(worldMatrix));
-	devContext->Unmap(pWorldBuffer, 0);
+	if (!instanced)
+	{
+		devContext->VSSetConstantBuffers(0, 1, &pWorldBuffer);
+
+		devContext->Map(pWorldBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &worldMap);
+		memcpy(worldMap.pData, &worldMatrix, sizeof(M_4x4));
+		devContext->Unmap(pWorldBuffer, 0);
+	}
+	else
+	{
+		devContext->VSSetConstantBuffers(0, 1, &instancedBuffer);
+
+		devContext->Map(instancedBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &worldMap);
+		memcpy(worldMap.pData, &worldMatrices, sizeof(M_4x4) * numInstances);
+		devContext->Unmap(instancedBuffer, 0);
+	}
 
 	unsigned int stride = sizeof(VertexOBJ);
 	unsigned int offset = 0;
@@ -173,9 +213,7 @@ void Object::Render()
 	if (!instanced)
 		devContext->DrawIndexed(numIndices, 0, 0);
 	else
-	{
-
-	}
+		devContext->DrawIndexedInstanced(numIndices, numInstances, 0, 0, 0);
 }
 
 void Object::PaintObject(const wchar_t* file)
@@ -186,6 +224,9 @@ void Object::PaintObject(const wchar_t* file)
 
 void Object::Shutdown()
 {
+	//delete[] worldMatrices;
+	//worldMatrices = nullptr;
+
 	SAFE_RELEASE(pVertBuffer);
 	SAFE_RELEASE(pIndexBuffer);
 	SAFE_RELEASE(pTexture);

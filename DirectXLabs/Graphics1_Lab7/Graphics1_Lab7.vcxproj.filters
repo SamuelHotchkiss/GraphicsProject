@@ -55,6 +55,9 @@
     <FxCompile Include="SkyPShader.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
+    <FxCompile Include="InstanceVShader.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Trivial_PS.csh" />

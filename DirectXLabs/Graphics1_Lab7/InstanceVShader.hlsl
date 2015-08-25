@@ -17,7 +17,7 @@ struct V_OUT
 
 cbuffer OBJECT : register(b0)
 {
-	float4x4 worldMatrix;
+	float4x4 worldMatrices[4];
 }
 
 cbuffer SCENE : register(b1)
@@ -27,15 +27,17 @@ cbuffer SCENE : register(b1)
 }
 
 
-V_OUT main(V_IN input)
+V_OUT main(V_IN input, uint instanceID : SV_InstanceID)
 {
 	V_OUT output = (V_OUT)0;
 
 	float4 localH = float4(input.posL, 1.0f);
 	float3 nrm = input.nrm;
 
-	localH = mul(localH, worldMatrix);
-	nrm = mul(nrm, worldMatrix);
+	//localH.xyz.x += instanceID;
+
+	localH = mul(localH, worldMatrices[instanceID]);
+	nrm = mul(nrm, worldMatrices[instanceID]);
 	output.posLT = localH;
 	// TODO: Move into view space, then projection space
 	localH = mul(localH, viewMatrix);

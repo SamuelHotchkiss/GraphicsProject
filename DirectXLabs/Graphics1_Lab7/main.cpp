@@ -63,6 +63,7 @@ class DEMO_APP
 
 	ID3D11Buffer* worldMatrixBuffer = nullptr;
 	ID3D11Buffer* sceneMatrixBuffer = nullptr;
+	//ID3D11Buffer* instancedBuffer = nullptr;
 
 	ID3D11Buffer* indexBuffer = nullptr;
 
@@ -268,7 +269,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 
 #if 1
-	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Pyramid.pVShader);
+	theDevice->CreateVertexShader(InstanceVShader, sizeof(InstanceVShader), nullptr, &Pyramid.pVShader);
 	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Pyramid.pPShader);
 
 	D3D11_INPUT_ELEMENT_DESC vLayout[] =
@@ -280,9 +281,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	// TODO: PART 2 STEP 8b
 	unsigned int numElements = ARRAYSIZE(vLayout);
-	theDevice->CreateInputLayout(vLayout, numElements, VertexSlimShader, sizeof(VertexSlimShader), &Pyramid.pInputLayout);
+	theDevice->CreateInputLayout(vLayout, numElements, InstanceVShader, sizeof(InstanceVShader), &Pyramid.pInputLayout);
 
+	Pyramid.numInstances = 4;
+	Pyramid.instanced = true;
 	Pyramid.Initialize(L"test_pyramid_triangle.obj", L"metallock.dds");
+
 	Translate(Pyramid.worldMatrix, 0.0f, 0.0f, 3.0f);
 
 	float length = 5.0f;
@@ -430,6 +434,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	theDevice->CreateBuffer(&worldBuffDesc, &worldSub, &pWorldBuffer);
 
+	/*D3D11_BUFFER_DESC instBuffDesc;
+	ZeroMemory(&instBuffDesc, sizeof(instBuffDesc));
+	instBuffDesc.Usage = D3D11_USAGE_DYNAMIC;
+	instBuffDesc.ByteWidth = sizeof(M_4x4) * Pyramid.numInstances;
+	instBuffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	instBuffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+	D3D11_SUBRESOURCE_DATA instSub;
+	instSub.pSysMem = Pyramid.worldMatrices;
+	instSub.SysMemPitch = 0;
+	instSub.SysMemSlicePitch = 0;
+
+	theDevice->CreateBuffer(&instBuffDesc, &instSub, &instancedBuffer);*/
+
 	D3D11_BUFFER_DESC sceneBuffDesc;
 	ZeroMemory(&sceneBuffDesc, sizeof(sceneBuffDesc));
 	sceneBuffDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -522,7 +540,6 @@ bool DEMO_APP::Run()
 	memcpy(sceneMap.pData, scene, sizeof(scene));
 	devContext->Unmap(sceneMatrixBuffer, 0);
 
-	devContext->VSSetConstantBuffers(0, 1, &pWorldBuffer);
 	devContext->VSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
 	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
 	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
@@ -530,34 +547,10 @@ bool DEMO_APP::Run()
 	devContext->PSSetConstantBuffers(3, 1, &spotBuff);
 
 
-#if 0
-	worldMatrix = RotateY(50.0f * dt) * worldMatrix;
-
-	devContext->VSSetConstantBuffers(0, 1, &worldMatrixBuffer);
-
-	D3D11_MAPPED_SUBRESOURCE worldMap;
-	ZeroMemory(&worldMap, sizeof(worldMap));
-
-	devContext->Map(worldMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &worldMap);
-	memcpy(worldMap.pData, &worldMatrix, sizeof(worldMatrix));
-	devContext->Unmap(worldMatrixBuffer, 0);
-
-	unsigned int stride = sizeof(VERTEX);
-	unsigned int offset = 0;
-	devContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-	devContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, offset);
-
-	devContext->PSSetShaderResources(0, 1, &shadeResourceView);
-
-	devContext->VSSetShader(vShader, nullptr, 0);
-	devContext->PSSetShader(pShader, nullptr, 0);
-
-	devContext->IASetInputLayout(inputLayout);
-	devContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	devContext->DrawIndexed(60, 0, 0);
-#endif
-	Pyramid.worldMatrix = RotateY(50.0f * dt) * Pyramid.worldMatrix;
+	Pyramid.worldMatrices[0] = RotateY(50.0f * dt) * Pyramid.worldMatrices[0];
+	Pyramid.worldMatrices[1] = RotateZ(50.0f * dt) * Pyramid.worldMatrices[1];
+	Pyramid.worldMatrices[2] = RotateX(50.0f * dt) * Pyramid.worldMatrices[2];
+	Pyramid.worldMatrices[3] = RotateY(200.0f * dt) * RotateZ(200.0f * dt) * RotateX(200.0f * dt) * Pyramid.worldMatrices[3];
 
 	//SKYBOX RENDERING/////
 	devContext->RSSetState(pOtherState);
@@ -752,6 +745,7 @@ bool DEMO_APP::ShutDown()
 	SAFE_RELEASE(targetView);
 	SAFE_RELEASE(backBuffer);
 	SAFE_RELEASE(swapChain);
+	SAFE_RELEASE(instancedBuffer);
 	SAFE_RELEASE(pWorldBuffer);
 	SAFE_RELEASE(devContext);
 	SAFE_RELEASE(theDevice);
