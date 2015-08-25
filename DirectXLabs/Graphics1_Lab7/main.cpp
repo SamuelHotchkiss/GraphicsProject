@@ -60,6 +60,7 @@ class DEMO_APP
 	ID3D11Buffer* constBuffer = nullptr;
 
 	ID3D11Buffer* allBuffs[2];
+
 	ID3D11Buffer* worldMatrixBuffer = nullptr;
 	ID3D11Buffer* sceneMatrixBuffer = nullptr;
 
@@ -84,6 +85,7 @@ class DEMO_APP
 	DIR_LIGHT thePtLight;
 	SPOT_LIGHT theSpotLight;
 
+	int witchLight = 0;
 public:
 
 	struct SIMPLE_VERTEX
@@ -150,7 +152,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	swapDescription.BufferDesc.RefreshRate.Denominator = 1;
 	swapDescription.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapDescription.OutputWindow = window;
-	swapDescription.SampleDesc.Count = 1;
+	swapDescription.SampleDesc.Count = 4;
 	swapDescription.SampleDesc.Quality = 0;
 	swapDescription.Windowed = true;
 
@@ -183,7 +185,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	depthDescription.MipLevels = 1;
 	depthDescription.ArraySize = 1;
 	depthDescription.Format = DXGI_FORMAT_D32_FLOAT;
-	depthDescription.SampleDesc.Count = 1;
+	depthDescription.SampleDesc.Count = 4;
 	depthDescription.SampleDesc.Quality = 0;
 	depthDescription.Usage = D3D11_USAGE_DEFAULT;
 	depthDescription.BindFlags = D3D11_BIND_DEPTH_STENCIL;
@@ -193,6 +195,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	HRESULT depthHR;
 	depthHR = theDevice->CreateTexture2D(&depthDescription, NULL, &DepthStencil);
 
+#pragma region STENCIL
 	//D3D11_DEPTH_STENCIL_DESC depthStencilDescription;
 	//ZeroMemory(&depthStencilDescription, sizeof(depthStencilDescription));
 	//// Depth test parameters
@@ -227,6 +230,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	//DSVdesc.Format = DXGI_FORMAT_D32_FLOAT;
 	//DSVdesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	//DSVdesc.Texture2D.MipSlice = 0;
+#pragma endregion
 
 	HRESULT DSVHR;
 	DSVHR = theDevice->CreateDepthStencilView(DepthStencil, NULL, &DepthStencilView);
@@ -235,11 +239,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	DepthStencil->Release();
 
 
-	// TODO: PART 1 STEP 4
 	swapChain->GetBuffer(0, __uuidof(backBuffer), reinterpret_cast<void**>(&backBuffer));
 	HRESULT hr = theDevice->CreateRenderTargetView(backBuffer, NULL, &targetView);
 
-	// TODO: PART 1 STEP 5
 	viewPort.TopLeftX = 0.0f;
 	viewPort.TopLeftY = 0.0f;
 	viewPort.Width = BACKBUFFER_WIDTH;
@@ -248,136 +250,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	viewPort.MaxDepth = 1.0f;
 
 
-	//box.PaintObject(1, Tron_height, Tron_width, Tron_numlevels, Tron_pixels, Tron_leveloffsets);
-
 #if 1
-
-	float angle = 0.0f;
-	VERTEX star[12];
-
-	star[0] = { 0.0f, 0.0f, -0.25f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f };
-	star[0].CreateNormal();
-
-	for (unsigned int numVerts = 1; numVerts < 11; numVerts++)
-	{
-		if (numVerts % 2 != 0)
-		{
-			star[numVerts] = { sinf((angle * 3.14f) / 180.0f), cosf((angle * 3.14f) / 180.0f), 0.0f, 1.0f };
-			star[numVerts].CreateNormal();
-		}
-		else
-		{
-			star[numVerts] = { sinf((angle * 3.14f) / 180.0f) * 0.3f, cosf((angle * 3.14f) / 180.0f) * 0.3f, 0.0f, 1.0f };
-			star[numVerts].CreateNormal();
-		}
-		angle += 36.0f;
-	}
-	star[11] = { 0.0f, 0.0f, 0.25f, 1.0f, 0.0f, 1.0f, 1.0f };
-	star[11].CreateNormal();
-
-
-#if 0
-	// TODO: PART 2 STEP 3b
-	D3D11_BUFFER_DESC bufferDescription;
-	ZeroMemory(&bufferDescription, sizeof(bufferDescription));
-	bufferDescription.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferDescription.ByteWidth = sizeof(OBJ_VERT) * 776;
-	bufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bufferDescription.CPUAccessFlags = 0;
-
-	// TODO: PART 2 STEP 3c
-	D3D11_SUBRESOURCE_DATA subData;
-	ZeroMemory(&subData, sizeof(subData));
-	subData.pSysMem = Cube_data;
-	subData.SysMemPitch = 0;
-	subData.SysMemSlicePitch = 0;
-#endif
-
-	unsigned int Indices[60];
-#pragma region IndexArray
-#if 1
-	Indices[0] = 0;
-	Indices[1] = 1;
-	Indices[2] = 2;
-	Indices[3] = 0;
-	Indices[4] = 2;
-	Indices[5] = 3;
-	Indices[6] = 0;
-	Indices[7] = 3;
-	Indices[8] = 4;
-	Indices[9] = 0;
-	Indices[10] = 4;
-	Indices[11] = 5;
-	Indices[12] = 0;
-	Indices[13] = 5;
-	Indices[14] = 6;
-	Indices[15] = 0;
-	Indices[16] = 6;
-	Indices[17] = 7;
-	Indices[18] = 0;
-	Indices[19] = 7;
-	Indices[20] = 8;
-	Indices[21] = 0;
-	Indices[22] = 8;
-	Indices[23] = 9;
-	Indices[24] = 0;
-	Indices[25] = 9;
-	Indices[26] = 10;
-	Indices[27] = 0;
-	Indices[28] = 10;
-	Indices[29] = 1;
-	Indices[30] = 11;
-	Indices[31] = 1;
-	Indices[32] = 10;
-	Indices[33] = 11;
-	Indices[34] = 10;
-	Indices[35] = 9;
-	Indices[36] = 11;
-	Indices[37] = 9;
-	Indices[38] = 8;
-	Indices[39] = 11;
-	Indices[40] = 8;
-	Indices[41] = 7;
-	Indices[42] = 11;
-	Indices[43] = 7;
-	Indices[44] = 6;
-	Indices[45] = 11;
-	Indices[46] = 6;
-	Indices[47] = 5;
-	Indices[48] = 11;
-	Indices[49] = 5;
-	Indices[50] = 4;
-	Indices[51] = 11;
-	Indices[52] = 4;
-	Indices[53] = 3;
-	Indices[54] = 11;
-	Indices[55] = 3;
-	Indices[56] = 2;
-	Indices[57] = 11;
-	Indices[58] = 2;
-	Indices[59] = 1;
-#endif
-#pragma endregion
-
-#if 0
-	D3D11_BUFFER_DESC indexDescription;
-	ZeroMemory(&indexDescription, sizeof(indexDescription));
-	indexDescription.Usage = D3D11_USAGE_IMMUTABLE;
-	indexDescription.ByteWidth = 4 * 1692;
-	indexDescription.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	indexDescription.CPUAccessFlags = 0;
-
-	D3D11_SUBRESOURCE_DATA indexData;
-	ZeroMemory(&indexData, sizeof(indexData));
-	indexData.pSysMem = Cube_indicies;
-	indexData.SysMemPitch = 0;
-	indexData.SysMemSlicePitch = 0;
-#endif
 
 	theDevice->CreateVertexShader(SkyVShader, sizeof(SkyVShader), nullptr, &SkyBox.pVShader);
 	theDevice->CreatePixelShader(SkyPShader, sizeof(SkyPShader), nullptr, &SkyBox.pPShader);
 
-	D3D11_INPUT_ELEMENT_DESC skyLayout[] = 
+	D3D11_INPUT_ELEMENT_DESC skyLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -386,14 +264,13 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	theDevice->CreateInputLayout(skyLayout, ARRAYSIZE(skyLayout), SkyVShader, sizeof(SkyVShader), &SkyBox.pInputLayout);
 
-	//SkyBox.PaintCube(L"SunsetSkybox.dds");
-	SkyBox.Initialize("sky.obj", L"SkyboxOcean.dds");
+	SkyBox.Initialize(L"sky.obj", L"SkyboxOcean.dds");
 
 
 #if 1
 	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Pyramid.pVShader);
 	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Pyramid.pPShader);
-	
+
 	D3D11_INPUT_ELEMENT_DESC vLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -404,29 +281,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	// TODO: PART 2 STEP 8b
 	unsigned int numElements = ARRAYSIZE(vLayout);
 	theDevice->CreateInputLayout(vLayout, numElements, VertexSlimShader, sizeof(VertexSlimShader), &Pyramid.pInputLayout);
-#if 0
-	D3D11_INPUT_ELEMENT_DESC starLayout[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-	};
-	unsigned int num = 3;
-	theDevice->CreateInputLayout(starLayout, num, StarShader, sizeof(StarShader), &Star.pInputLayout);
 
-	Star.pVertices = star;
-	Star.pIndices = Indices;
-	Star.numVertices = 12;
-	Star.numIndices = 60;
-	Star.Initialize();
-#endif
-
-	//Cube.pVertices = Cube_data;
-	//Cube.numVertices = 776;
-	//Cube.pIndices = Cube_indicies;
-	//Cube.numIndices = 1692;
-	//
-	Pyramid.Initialize("test_pyramid_triangle.obj", L"metallock.dds");
+	Pyramid.Initialize(L"test_pyramid_triangle.obj", L"metallock.dds");
+	Translate(Pyramid.worldMatrix, 0.0f, 0.0f, 3.0f);
 
 	float length = 5.0f;
 
@@ -437,34 +294,31 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 		{ -length, 0.0f, -length, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f },
 		{ length, 0.0f, -length, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f }
 	};
-	
+
 	unsigned int quadIndices[6] =
 	{
 		0, 1, 3,
 		0, 3, 2
 	};
 
-	//theDevice->CreateShaderResourceView(cubeTexture, NULL, &Quad.pShaderResource);
-
 	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Quad.pVShader);
 	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Quad.pPShader);
-	
-	theDevice->CreateInputLayout(vLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Quad.pInputLayout);
-	//Quad.pInputLayout = Cube.pInputLayout;
+
+	theDevice->CreateInputLayout(skyLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Quad.pInputLayout);
 
 	Quad.pVertices = quad;
 	Quad.numVertices = 4;
 	Quad.pIndices = quadIndices;
 	Quad.numIndices = 6;
 	Quad.Initialize(nullptr, L"checkerboard.dds");
-	
-	Translate(Quad.worldMatrix, 0.0f, -1.0f, 0.0f);
+
+	Translate(Quad.worldMatrix, 0.0f, -1.0f, 3.0f);
 
 #pragma region THE_LIGHTS
 	theLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 1.0f);
-	ambientLight[0] = 0.25f;
-	ambientLight[1] = 0.25f;
-	ambientLight[2] = 0.25f;
+	ambientLight[0] = 0.5f;
+	ambientLight[1] = 0.5f;
+	ambientLight[2] = 0.5f;
 	ambientLight[3] = 1.0f;
 
 	D3D11_BUFFER_DESC lightDesc;
@@ -568,12 +422,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	worldBuffDesc.ByteWidth = sizeof(M_4x4);
 	worldBuffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	worldBuffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	
+
 	D3D11_SUBRESOURCE_DATA worldSub;
 	worldSub.pSysMem = &worldMatrix;
 	worldSub.SysMemPitch = 0;
 	worldSub.SysMemSlicePitch = 0;
-	
+
 	theDevice->CreateBuffer(&worldBuffDesc, &worldSub, &pWorldBuffer);
 
 	D3D11_BUFFER_DESC sceneBuffDesc;
@@ -598,7 +452,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	rasterDesc.FrontCounterClockwise = TRUE;
 	rasterDesc.CullMode = D3D11_CULL_NONE;
 	rasterDesc.AntialiasedLineEnable = true;
-	//rasterDesc.MultisampleEnable = false;
+	rasterDesc.MultisampleEnable = true;
 
 	theDevice->CreateRasterizerState(&rasterDesc, &pRasterState);
 
@@ -606,12 +460,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	otherDesc.FrontCounterClockwise = FALSE;
 	otherDesc.CullMode = D3D11_CULL_FRONT;
 	otherDesc.AntialiasedLineEnable = true;
-	//rasterDesc.MultisampleEnable = false;
+	//rasterDesc.MultisampleEnable = true;
 
 	theDevice->CreateRasterizerState(&otherDesc, &pOtherState);
 #endif
 
-	
+
 
 }
 
@@ -622,9 +476,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 bool DEMO_APP::Run()
 {
 	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
-	
+
 	devContext->RSSetViewports(1, &viewPort);
-	
+
 	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	devContext->ClearRenderTargetView(targetView, ClearColor);
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -704,6 +558,7 @@ bool DEMO_APP::Run()
 	devContext->DrawIndexed(60, 0, 0);
 #endif
 	Pyramid.worldMatrix = RotateY(50.0f * dt) * Pyramid.worldMatrix;
+
 	//SKYBOX RENDERING/////
 	devContext->RSSetState(pOtherState);
 	//SkyBox.worldMatrix = viewMatrix;
@@ -718,8 +573,6 @@ bool DEMO_APP::Run()
 
 	devContext->RSSetState(pRasterState);
 
-	//Star.Render();
-	//Cube.Render();
 	Pyramid.Render();
 	Quad.Render();
 
@@ -732,81 +585,129 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 {
 	GetCursorPos(&currPoint);
 
-	// Translation
-	if (GetAsyncKeyState('W'))
-	{
-		Translate(viewMatrix, 0.0f, 0.0f, moveSpd * dt);
-	}
-	else if (GetAsyncKeyState('S'))
-	{
-		Translate(viewMatrix, 0.0f, 0.0f, -moveSpd * dt);
-	}
-	if (GetAsyncKeyState('A'))
-	{
-		Translate(viewMatrix, -moveSpd * dt, 0.0f, 0.0f);
-	}
-	else if (GetAsyncKeyState('D'))
-	{
-		Translate(viewMatrix, moveSpd * dt, 0.0f, 0.0f);
-	}
+	if (GetAsyncKeyState('1') & 0x1) { witchLight = 1; }
+	else if (GetAsyncKeyState('2') & 0x1) { witchLight = 2; }
+	else if (GetAsyncKeyState('3') & 0x1) { witchLight = 3; }
+	else if (GetAsyncKeyState('0') & 0x1) { witchLight = 0; }
 
-	if (GetAsyncKeyState('F') & 0x1)
+	if (witchLight == 1)
 	{
-		theLight.color[0] = 0.0f;
-		theLight.color[1] = 0.0f;
-		theLight.color[2] = 0.0f;
-		theLight.color[3] = 0.0f;
+		if (GetAsyncKeyState('Q') & 0x1)
+		{
+			theLight.color[0] = 0.0f;
+			theLight.color[1] = 0.0f;
+			theLight.color[2] = 0.0f;
+			theLight.color[3] = 0.0f;
+		}
+		else if (GetAsyncKeyState('E') & 0x1)
+		{
+			theLight.color[0] = 1.0f;
+			theLight.color[1] = 0.0f;
+			theLight.color[2] = 0.0f;
+			theLight.color[3] = 1.0f;
+		}
+
+		// Translation
+		if (GetAsyncKeyState('W'))
+		{
+			theLight.direction[3] += moveSpd * dt;
+		}
+		else if (GetAsyncKeyState('S'))
+		{
+			theLight.direction[3] -= moveSpd * dt;
+		}
+		if (GetAsyncKeyState('A'))
+		{
+			theLight.direction[0] -= moveSpd * dt;
+		}
+		else if (GetAsyncKeyState('D'))
+		{
+			theLight.direction[0] += moveSpd * dt;
+		}
 	}
-	else if (GetAsyncKeyState('G') & 0x1)
+	else if (witchLight == 2)
 	{
-		theLight.color[0] = 1.0f;
-		theLight.color[1] = 0.0f;
-		theLight.color[2] = 0.0f;
-		theLight.color[3] = 1.0f;
+		if (GetAsyncKeyState('Q') & 0x1)
+		{
+			thePtLight.color[0] = 0.0f;
+			thePtLight.color[1] = 0.0f;
+			thePtLight.color[2] = 0.0f;
+			thePtLight.color[3] = 0.0f;
+		}
+		else if (GetAsyncKeyState('E') & 0x1)
+		{
+			thePtLight.color[0] = 0.0f;
+			thePtLight.color[1] = 0.0f;
+			thePtLight.color[2] = 1.0f;
+			thePtLight.color[3] = 1.0f;
+		}
+
+		// Translation
+		if (GetAsyncKeyState('W'))
+		{
+			thePtLight.direction[2] += moveSpd * dt;
+		}
+		else if (GetAsyncKeyState('S'))
+		{
+			thePtLight.direction[2] -= moveSpd * dt;
+		}
+		if (GetAsyncKeyState('A'))
+		{
+			thePtLight.direction[0] -= moveSpd * dt;
+		}
+		else if (GetAsyncKeyState('D'))
+		{
+			thePtLight.direction[0] += moveSpd * dt;
+		}
 	}
-
-	if (GetAsyncKeyState('Q') & 0x1)
+	
+	else if (witchLight == 0)
 	{
-		ambientLight[0] = 0.0f;
-		ambientLight[1] = 0.0f;
-		ambientLight[2] = 0.0f;
-		ambientLight[3] = 0.0f;
-	}
-	else if (GetAsyncKeyState('E') & 0x1)
-	{
-		ambientLight[0] = 0.25f;
-		ambientLight[1] = 0.25f;
-		ambientLight[2] = 0.25f;
-		ambientLight[3] = 1.0f;
-	}
+		// Translation
+		if (GetAsyncKeyState('W'))
+		{
+			Translate(viewMatrix, 0.0f, 0.0f, moveSpd * dt);
+		}
+		else if (GetAsyncKeyState('S'))
+		{
+			Translate(viewMatrix, 0.0f, 0.0f, -moveSpd * dt);
+		}
+		if (GetAsyncKeyState('A'))
+		{
+			Translate(viewMatrix, -moveSpd * dt, 0.0f, 0.0f);
+		}
+		else if (GetAsyncKeyState('D'))
+		{
+			Translate(viewMatrix, moveSpd * dt, 0.0f, 0.0f);
+		}
 
-	// Rotation
-	if (GetAsyncKeyState(VK_RBUTTON))
-	{
-		float dx = (float)(prevPoint.x - currPoint.x);
-		float dy = (float)(prevPoint.y - currPoint.y);
+		if (GetAsyncKeyState(VK_RBUTTON))
+		{
+			float dx = (float)(prevPoint.x - currPoint.x);
+			float dy = (float)(prevPoint.y - currPoint.y);
 
-		float oldPosition[3] = { viewMatrix.M[3][0], viewMatrix.M[3][1], viewMatrix.M[3][2] };
+			float oldPosition[3] = { viewMatrix.M[3][0], viewMatrix.M[3][1], viewMatrix.M[3][2] };
 
-		viewMatrix.M[3][0] = 0;
-		viewMatrix.M[3][1] = 0;
-		viewMatrix.M[3][2] = 0;
+			viewMatrix.M[3][0] = 0;
+			viewMatrix.M[3][1] = 0;
+			viewMatrix.M[3][2] = 0;
 
-		viewMatrix = viewMatrix * RotateY(dx * rotSpeed * dt);
-		viewMatrix = RotateX(dy * rotSpeed * dt) * viewMatrix;
+			viewMatrix = viewMatrix * RotateY(dx * rotSpeed * dt);
+			viewMatrix = RotateX(dy * rotSpeed * dt) * viewMatrix;
 
-		viewMatrix.M[3][0] = oldPosition[0];
-		viewMatrix.M[3][1] = oldPosition[1];
-		viewMatrix.M[3][2] = oldPosition[2];
-	}
+			viewMatrix.M[3][0] = oldPosition[0];
+			viewMatrix.M[3][1] = oldPosition[1];
+			viewMatrix.M[3][2] = oldPosition[2];
+		}
 
-	if (GetAsyncKeyState(VK_UP))
-	{
-		Translate(viewMatrix, 0.0f, moveSpd * dt, 0.0f);
-	}
-	else if (GetAsyncKeyState(VK_DOWN))
-	{
-		Translate(viewMatrix, 0.0f, -moveSpd * dt, 0.0f);
+		if (GetAsyncKeyState(VK_UP))
+		{
+			Translate(viewMatrix, 0.0f, moveSpd * dt, 0.0f);
+		}
+		else if (GetAsyncKeyState(VK_DOWN))
+		{
+			Translate(viewMatrix, 0.0f, -moveSpd * dt, 0.0f);
+		}
 	}
 
 	prevPoint = currPoint;
@@ -814,7 +715,7 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 
 void DEMO_APP::Resize()
 {
-
+	
 }
 
 //************************************************************

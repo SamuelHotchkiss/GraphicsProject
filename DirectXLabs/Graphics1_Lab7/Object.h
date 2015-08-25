@@ -2,6 +2,7 @@
 
 #include "Includes.h"
 #include "DDSTextureLoader.h"
+#include <thread>
 
 struct VertexOBJ
 {
@@ -44,9 +45,15 @@ class Object
 	ID3D11Resource*				pTexture			= nullptr;
 	ID3D11SamplerState*			pSamplerState		= nullptr;
 
+	//thread* modelThread = nullptr;
+	//thread* textureThread = nullptr;
+
+
 	void PaintObject(const wchar_t* file);
-	void LoadModelFromFile(const char* file);
+	void LoadModelFromFile(const wchar_t* file);
 	unsigned int BuildIndices(VertexOBJ);
+
+	static void WeaveThread(void*, const wchar_t*);
 public:
 
 	ID3D11InputLayout*			pInputLayout		= nullptr;		// Object's input layout CREATE EXTERNALLY
@@ -58,6 +65,8 @@ public:
 	vector<VertexOBJ> mesh;
 	vector<unsigned int> meshIndices;
 
+	bool instanced = false;
+
 	const VertexOBJ*			pVertices			= nullptr;		// The actual vertices so we can fill our vertex buffer
 	const unsigned int*			pIndices			= nullptr;		// The actual indices so we can fill our index buffer
 	unsigned int				numVertices			= 0;			// The number of vertices
@@ -65,22 +74,23 @@ public:
 
 	M_4x4						worldMatrix;
 
-	void Initialize(const char* modelFile, const wchar_t* textFile);
+	void Initialize(const wchar_t* modelFile, const wchar_t* textFile);
 	void Render();
 	void Shutdown();
-	void PaintCube(const wchar_t* file);
 };
 
-void Object::Initialize(const char* modelFile = nullptr, const wchar_t* textFile = nullptr)
+void Object::Initialize(const wchar_t* modelFile = nullptr, const wchar_t* textFile = nullptr)
 {
-	// Initialize World Matrix
-	//Translate(worldMatrix, 0.0f, 0.0f, 3.0f);
-
-	//numVertices = mesh.size();
-	if (modelFile)
-		LoadModelFromFile(modelFile);
+	
+	// (modelFile)
+		//LoadModelFromFile(modelFile);
 	if (textFile)
 		PaintObject(textFile);
+
+	if (modelFile)
+	{
+		thread(WeaveThread, this, modelFile).join();
+	}
 
 	// Build Vertex Buffer
 	D3D11_BUFFER_DESC vertexBufferDesc;
@@ -160,7 +170,12 @@ void Object::Render()
 	devContext->IASetInputLayout(pInputLayout);
 	devContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	devContext->DrawIndexed(numIndices, 0, 0);
+	if (!instanced)
+		devContext->DrawIndexed(numIndices, 0, 0);
+	else
+	{
+
+	}
 }
 
 void Object::PaintObject(const wchar_t* file)
@@ -168,17 +183,6 @@ void Object::PaintObject(const wchar_t* file)
 	CreateDDSTextureFromFile(theDevice, file, &pTexture, &pShaderResource);
 }
 
-void Object::PaintCube(const wchar_t* file)
-{
-	CreateDDSTextureFromFile(theDevice, file, &pTexture, nullptr);
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC shadeDesc;
-	ZeroMemory(&shadeDesc, sizeof(shadeDesc));
-	shadeDesc.Texture2D.MostDetailedMip = 0;
-	shadeDesc.Texture2D.MipLevels = 1;
-	shadeDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-	theDevice->CreateShaderResourceView(pTexture, &shadeDesc, &pShaderResource);
-}
 
 void Object::Shutdown()
 {
@@ -192,7 +196,7 @@ void Object::Shutdown()
 	SAFE_RELEASE(pShaderResource);
 }
 
-void Object::LoadModelFromFile(const char* file)
+void Object::LoadModelFromFile(const wchar_t* file)
 {
 	// Temp variables to store values
 	vector<unsigned int> vertexIndices, uvIndices, normIndices;
@@ -333,4 +337,9 @@ unsigned int Object::BuildIndices(VertexOBJ vert)
 	}
 	mesh.push_back(vert);
 	return mesh.size() - 1;
+}
+
+void Object::WeaveThread(void* pointer, const wchar_t* filename)
+{
+	static_cast<Object*>(pointer)->LoadModelFromFile(filename);
 }

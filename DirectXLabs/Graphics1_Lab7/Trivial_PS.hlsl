@@ -80,13 +80,16 @@ float4 main( V_IN input ) : SV_TARGET
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//BRINGING IT ALL TOGETHER
-	dirDiffResult = (baseColor * lightColor * lRatio) + (baseColor * ambientColor);
-	ptDiffResult = (baseColor * ptLightColor * plRatio) + (baseColor * ambientColor);
+	dirDiffResult = (baseColor * lightColor * lRatio);// +(baseColor * ambientColor);
+	//dirSpecResult = (lightColor * dirIntensity);
+
+	ptDiffResult = (baseColor * ptLightColor * plRatio);// +(baseColor * ambientColor);
 	ptDiffResult *= attenuation;
-	spotDiffResult = (baseColor * spotLightColor * splRatio * spotFactor) + (baseColor * ambientColor);
+
+	spotDiffResult = (baseColor * spotLightColor * splRatio * spotFactor);// +(baseColor * ambientColor);
 	spotDiffResult *= spotAttenuation;
 
-	float4 finalColor = saturate(dirDiffResult + ptDiffResult + spotDiffResult);
+	float4 finalColor = saturate(dirDiffResult + ptDiffResult + spotDiffResult + (baseColor * ambientColor));
 
 	return finalColor;
 }
