@@ -51,12 +51,11 @@ class DEMO_APP
 	M_4x4 projMatrix;
 	M_4x4 cameraMatrix;
 
-	//Object Star;
 	Object Quad;
-	//Object Cube;
+
 	Object Pyramid;
 	Object SkyBox;
-	Object Triangle;
+	Object QuadSeed;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -319,29 +318,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	Translate(Quad.worldMatrix, 0.0f, -1.0f, 3.0f);
 
-	VertexOBJ tri[3] = 
-	{
-		{-length, length, length, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f },
-		{ length, 0.0f, length, 1.1f, 1.1f, 0.0f, 0.0f, 1.0f },
-		{-length, 0.0f, length, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f }
-	};
-	unsigned int triIndices[3] =
-	{
-		0, 1, 2
-	};
+	theDevice->CreateVertexShader(PassToGeoVShader, sizeof(PassToGeoVShader), nullptr, &QuadSeed.pVShader);
+	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &QuadSeed.pPShader);
+	theDevice->CreateGeometryShader(QuadCreator, sizeof(QuadCreator), nullptr, &QuadSeed.pGShader);
 
-	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Triangle.pVShader);
-	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Triangle.pPShader);
-	//theDevice->CreateGeometryShader(QuadCreator, sizeof(QuadCreator), nullptr, &Triangle.pGShader);
+	theDevice->CreateInputLayout(skyLayout, 3, PassToGeoVShader, sizeof(PassToGeoVShader), &QuadSeed.pInputLayout);
 
-	theDevice->CreateInputLayout(skyLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Triangle.pInputLayout);
+	VertexOBJ seed[1] = { { 0.0f, 0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f } };
 
-	Triangle.pVertices = tri;
-	Triangle.numVertices = 3;
-	Triangle.pIndices = triIndices;
-	Triangle.numIndices = 3;
-	Triangle.Initialize(nullptr, L"Checkerboard.dds");
-	Translate(Triangle.worldMatrix, 0.0f, -1.0f, 3.0f);
+	QuadSeed.pVertices = seed;
+	QuadSeed.numVertices = 6;
+	QuadSeed.pIndices = quadIndices;
+	QuadSeed.numIndices = 6;
+	QuadSeed.Initialize(nullptr, L"checkerboard.dds");
+	Translate(QuadSeed.worldMatrix, 0.0f, 0.0f, 3.0f);
 
 #pragma region THE_LIGHTS
 	theLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 1.0f);
@@ -570,7 +560,8 @@ bool DEMO_APP::Run()
 	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
 	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
 	devContext->PSSetConstantBuffers(3, 1, &spotBuff);
-
+	//devContext->GSSetConstantBuffers(0, 1, &pWorldBuffer);
+	devContext->GSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
 
 	Pyramid.worldMatrices[0] = RotateY(50.0f * dt) * Pyramid.worldMatrices[0];
 	Pyramid.worldMatrices[1] = RotateZ(50.0f * dt) * Pyramid.worldMatrices[1];
@@ -593,7 +584,7 @@ bool DEMO_APP::Run()
 
 	Pyramid.Render();
 	Quad.Render();
-	Triangle.Render();
+	QuadSeed.Render();
 
 	swapChain->Present(0, 0);
 
@@ -679,7 +670,7 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 			thePtLight.direction[0] += moveSpd * dt;
 		}
 	}
-	
+
 	else if (witchLight == 0)
 	{
 		// Translation
@@ -734,7 +725,7 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 
 void DEMO_APP::Resize()
 {
-	
+
 }
 
 //************************************************************
@@ -749,7 +740,7 @@ bool DEMO_APP::ShutDown()
 	Quad.Shutdown();
 	Pyramid.Shutdown();
 	SkyBox.Shutdown();
-	Triangle.Shutdown();
+	QuadSeed.Shutdown();
 
 	SAFE_RELEASE(pOtherState);
 	SAFE_RELEASE(spotBuff);

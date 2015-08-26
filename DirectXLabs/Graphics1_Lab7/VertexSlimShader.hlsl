@@ -37,14 +37,11 @@ V_OUT main(V_IN input)
 	localH = mul(localH, worldMatrix);
 	nrm = mul(nrm, worldMatrix);
 	output.posLT = localH;
-	// TODO: Move into view space, then projection space
 	localH = mul(localH, viewMatrix);
-	//nrm = mul(nrm, viewMatrix);
 	localH = mul(localH, projMatrix);
-	//nrm = mul(nrm, projMatrix);
 
 	output.posH = localH;
-	//output.colH = float4(1.0f,0.0f,0.0f,1.0f);
+	
 	output.uv = input.uv;
 	output.nrm = nrm;
 

@@ -61,6 +61,9 @@
     <FxCompile Include="QuadCreator.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
+    <FxCompile Include="PassToGeoVShader.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Trivial_PS.csh" />

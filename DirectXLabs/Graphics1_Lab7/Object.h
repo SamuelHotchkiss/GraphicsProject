@@ -53,7 +53,8 @@ class Object
 	void LoadModelFromFile(const wchar_t* file);
 	unsigned int BuildIndices(VertexOBJ);
 
-	static void WeaveThread(void*, const wchar_t*);
+	static void WeaveModelThread(void*, const wchar_t*);
+	static void WeaveTextureThread(void*, const wchar_t*);
 public:
 
 	ID3D11InputLayout*			pInputLayout = nullptr;		// Object's input layout CREATE EXTERNALLY
@@ -89,13 +90,19 @@ void Object::Initialize(const wchar_t* modelFile = nullptr, const wchar_t* textF
 
 	// (modelFile)
 	//LoadModelFromFile(modelFile);
-	if (textFile)
-		PaintObject(textFile);
+	//if (textFile)
+		//PaintObject(textFile);
 
-	if (modelFile)
+	if (modelFile && textFile)
 	{
-		thread(WeaveThread, this, modelFile).join();
+		thread ModelThread(WeaveModelThread, this, modelFile);
+		thread TextureThread(WeaveTextureThread, this, textFile);
+
+		ModelThread.join();
+		TextureThread.join();
 	}
+	else if (textFile && !modelFile)
+		PaintObject(textFile);
 
 	// Build Vertex Buffer
 	D3D11_BUFFER_DESC vertexBufferDesc;
@@ -204,18 +211,19 @@ void Object::Render()
 	devContext->IASetVertexBuffers(0, 1, &pVertBuffer, &stride, &offset);
 	devContext->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R32_UINT, offset);
 
-	if (pGShader)
-	{
-		devContext->GSSetConstantBuffers(0, 1, &pWorldBuffer);
-		devContext->GSSetShader(pGShader, NULL, 0);
-	}
+	devContext->GSSetConstantBuffers(0, 1, &pWorldBuffer);
+	devContext->GSSetShader(pGShader, NULL, 0);
+
 	devContext->VSSetShader(pVShader, NULL, 0);
 	devContext->PSSetShader(pPShader, NULL, 0);
 
 	devContext->PSSetShaderResources(0, 1, &pShaderResource);
 
 	devContext->IASetInputLayout(pInputLayout);
-	devContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	if (!pGShader)
+		devContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	else
+		devContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 	if (!instanced)
 		devContext->DrawIndexed(numIndices, 0, 0);
@@ -388,7 +396,12 @@ unsigned int Object::BuildIndices(VertexOBJ vert)
 	return mesh.size() - 1;
 }
 
-void Object::WeaveThread(void* pointer, const wchar_t* filename)
+void Object::WeaveModelThread(void* pointer, const wchar_t* filename)
 {
 	static_cast<Object*>(pointer)->LoadModelFromFile(filename);
+}
+
+void Object::WeaveTextureThread(void* object, const wchar_t* filename)
+{
+	static_cast<Object*>(object)->PaintObject(filename);
 }
