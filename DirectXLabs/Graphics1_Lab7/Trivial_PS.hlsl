@@ -43,6 +43,9 @@ float4 main(V_IN input) : SV_TARGET
 {
 	float4 baseColor = baseTexture.Sample(filters[0], input.uv.xy);
 
+	if (baseColor.a < 0.1f)
+		discard;
+
 	float4 dirDiffResult;
 	float4 ptDiffResult;
 	float4 spotDiffResult;
@@ -91,5 +94,5 @@ float4 main(V_IN input) : SV_TARGET
 
 	float4 finalColor = saturate(dirDiffResult + ptDiffResult + spotDiffResult + (baseColor * ambientColor));
 
-		return finalColor;
+	return finalColor;
 }

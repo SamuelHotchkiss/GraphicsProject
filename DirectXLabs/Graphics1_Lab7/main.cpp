@@ -63,7 +63,7 @@ class DEMO_APP
 	Object Pyramid;
 	Object SkyBox;
 	Object QuadSeed;
-	Object TexturePyramid;
+	Object Tree;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -346,6 +346,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	theDevice->CreateInputLayout(skyLayout, 3, PassToGeoVShader, sizeof(PassToGeoVShader), &QuadSeed.pInputLayout);
 
+	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Tree.pVShader);
+	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Tree.pPShader);
+	theDevice->CreateInputLayout(skyLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Tree.pInputLayout);
+	Tree.Initialize(L"the_tree.obj", L"treeTexture.dds");
+	Translate(Tree.worldMatrix, 2.0f, -1.0f, 3.0f);
+
 	VertexOBJ seed =  { 0.0f, 0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f };
 	unsigned int x = 0;
 	QuadSeed.pVertices = &seed;
@@ -384,7 +390,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	shadeDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMS;
 	shadeDesc.Format = viewDesc.Format;
 	shadeDesc.Texture2D.MostDetailedMip = 0;
-	shadeDesc.Texture2D.MipLevels = 1;
+	shadeDesc.Texture2D.MipLevels = 5;
 	theDevice->CreateShaderResourceView(renderTexture, &shadeDesc, &QuadSeed.pShaderResource);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC yetAnotherShadeDesc;
@@ -392,7 +398,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	yetAnotherShadeDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	yetAnotherShadeDesc.Format = viewDesc.Format;
 	yetAnotherShadeDesc.Texture2D.MostDetailedMip = 0;
-	yetAnotherShadeDesc.Texture2D.MipLevels = 1;
+	yetAnotherShadeDesc.Texture2D.MipLevels = 5;
 	theDevice->CreateShaderResourceView(renderTexture, &yetAnotherShadeDesc, &QuadSeed.pOtherShaderResource);
 
 
@@ -618,9 +624,12 @@ bool DEMO_APP::Run()
 
 	Pyramid.Render();
 	Quad.Render();
+	Tree.Render();
 
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
+	devContext->GenerateMips(QuadSeed.pShaderResource);
+
 	/////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
 
@@ -694,7 +703,11 @@ bool DEMO_APP::Run()
 
 	Pyramid.Render();
 	Quad.Render();
+	Tree.Render();
+
+	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
+	devContext->GenerateMips(QuadSeed.pShaderResource);
 
 	/////////////////////2nd VIEWPORT/////////////////////////////////////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &anotherView, DepthStencilView);
@@ -741,9 +754,12 @@ bool DEMO_APP::Run()
 
 	Pyramid.Render();
 	Quad.Render();
+	Tree.Render();
 
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
+	devContext->GenerateMips(QuadSeed.pShaderResource);
+
 	/////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
 
@@ -817,7 +833,11 @@ bool DEMO_APP::Run()
 
 	Pyramid.Render();
 	Quad.Render();
+	Tree.Render();
+
+	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
+	devContext->GenerateMips(QuadSeed.pShaderResource);
 
 
 	swapChain->Present(0, 0);
@@ -1024,6 +1044,7 @@ bool DEMO_APP::ShutDown()
 	SkyBox.Shutdown();
 	QuadSeed.Shutdown();
 	//TexturePyramid.Shutdown();
+	Tree.Shutdown();
 
 	SAFE_RELEASE(portsBuff);
 	SAFE_RELEASE(sndSceneBuff);
