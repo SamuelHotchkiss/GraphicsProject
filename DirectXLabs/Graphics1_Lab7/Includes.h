@@ -37,6 +37,8 @@ using namespace DirectX;
 #include "InstanceVShader.csh"
 #include "QuadCreator.csh"
 #include "PassToGeoVShader.csh"
+#include "PostGeoShader.csh"
+#include "PostProcess.csh"
 
 ID3D11Device*					theDevice;			// used for  creating stuff
 ID3D11DeviceContext*			devContext;			// binds objects to the pipeline

@@ -36,6 +36,8 @@ class DEMO_APP
 	ID3D11Texture2D*				renderTexture = nullptr;
 	ID3D11Texture2D*				fixerTexture = nullptr;
 
+	ID3D11RenderTargetView*			postProcessView = nullptr;
+
 	ID3D11Texture2D*				cubeTexture = nullptr;
 	ID3D11ShaderResourceView*		shadeResourceView = nullptr;
 	ID3D11SamplerState*				samplerState = nullptr;
@@ -64,6 +66,7 @@ class DEMO_APP
 	Object SkyBox;
 	Object QuadSeed;
 	Object Tree;
+	Object PostQuad;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -352,6 +355,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	Tree.Initialize(L"the_tree.obj", L"treeTexture.dds");
 	Translate(Tree.worldMatrix, 2.0f, -1.0f, 3.0f);
 
+	theDevice->CreateVertexShader(PassToGeoVShader, sizeof(PassToGeoVShader), nullptr, &PostQuad.pVShader);
+	theDevice->CreatePixelShader(PostProcess, sizeof(PostProcess), nullptr, &PostQuad.pPShader);
+	theDevice->CreateGeometryShader(PostGeoShader, sizeof(PostGeoShader), nullptr, &PostQuad.pGShader);
+	theDevice->CreateInputLayout(skyLayout, 3, PassToGeoVShader, sizeof(PassToGeoVShader), &PostQuad.pInputLayout);
+	
 	VertexOBJ seed =  { 0.0f, 0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f };
 	unsigned int x = 0;
 	QuadSeed.pVertices = &seed;
@@ -359,6 +367,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	QuadSeed.pIndices = &x;
 	QuadSeed.numIndices = 1;
 	
+	VertexOBJ center;
+	PostQuad.pVertices = &center;
+	PostQuad.numVertices = 1;
+	PostQuad.pIndices = &x;
+	PostQuad.numIndices = 1;
+
 	D3D11_TEXTURE2D_DESC viewDesc;
 	ZeroMemory(&viewDesc, sizeof(viewDesc));
 	viewDesc.Width = BACKBUFFER_WIDTH;
@@ -384,6 +398,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	rendViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
 	rendViewDesc.Texture2D.MipSlice = 0;
 	theDevice->CreateRenderTargetView(renderTexture, &rendViewDesc, &anotherView);
+	theDevice->CreateRenderTargetView(renderTexture, &rendViewDesc, &postProcessView);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC shadeDesc;
 	ZeroMemory(&shadeDesc, sizeof(shadeDesc));
@@ -391,7 +406,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	shadeDesc.Format = viewDesc.Format;
 	shadeDesc.Texture2D.MostDetailedMip = 0;
 	shadeDesc.Texture2D.MipLevels = 5;
-	theDevice->CreateShaderResourceView(renderTexture, &shadeDesc, &QuadSeed.pShaderResource);
+	//theDevice->CreateShaderResourceView(renderTexture, &shadeDesc, &QuadSeed.pShaderResource);
+	theDevice->CreateShaderResourceView(renderTexture, &shadeDesc, &PostQuad.pShaderResource);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC yetAnotherShadeDesc;
 	ZeroMemory(&yetAnotherShadeDesc, sizeof(yetAnotherShadeDesc));
@@ -399,19 +415,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	yetAnotherShadeDesc.Format = viewDesc.Format;
 	yetAnotherShadeDesc.Texture2D.MostDetailedMip = 0;
 	yetAnotherShadeDesc.Texture2D.MipLevels = 5;
-	theDevice->CreateShaderResourceView(renderTexture, &yetAnotherShadeDesc, &QuadSeed.pOtherShaderResource);
+	//theDevice->CreateShaderResourceView(renderTexture, &yetAnotherShadeDesc, &QuadSeed.pOtherShaderResource);
+	theDevice->CreateShaderResourceView(renderTexture, &yetAnotherShadeDesc, &PostQuad.pOtherShaderResource);
 
+	PostQuad.Initialize();
 
-	QuadSeed.Initialize(nullptr, nullptr);
+	QuadSeed.Initialize(nullptr, L"checkerboard.dds");
 	Translate(QuadSeed.worldMatrix, 0.0f, 0.0f, 3.0f);
 
-	//D3D11_BUFFER_DESC viewPortsDesc;
-	//ZeroMemory(&viewPortsDesc, sizeof(viewPortsDesc));
-	//viewPortsDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	//viewPortsDesc.ByteWidth = sizeof(D3D11_VIEWPORT) * 2;
-	//viewPortsDesc.Usage = D3D11_USAGE_DYNAMIC;
-	//viewPortsDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	//
+	D3D11_BUFFER_DESC viewPortsDesc;
+	ZeroMemory(&viewPortsDesc, sizeof(viewPortsDesc));
+	viewPortsDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	viewPortsDesc.ByteWidth = sizeof(D3D11_VIEWPORT) * 2;
+	viewPortsDesc.Usage = D3D11_USAGE_DYNAMIC;
+	viewPortsDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	
 	//D3D11_SUBRESOURCE_DATA viewPortsSub;
 	//ZeroMemory(&viewPortsSub, sizeof(viewPortsSub));
 
@@ -584,10 +602,10 @@ bool DEMO_APP::Run()
 	devContext->RSSetViewports(1, &viewPort);
 
 	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	devContext->ClearRenderTargetView(targetView, ClearColor);
+	devContext->ClearRenderTargetView(anotherView, ClearColor);
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	scene[0] = secondCamera;
+	scene[0] = Inverse4x4(viewMatrix);
 
 	D3D11_MAPPED_SUBRESOURCE sceneMap;
 	ZeroMemory(&sceneMap, sizeof(sceneMap));
@@ -612,9 +630,59 @@ bool DEMO_APP::Run()
 	devContext->RSSetState(pOtherState);
 	//SkyBox.worldMatrix = viewMatrix;
 
-	SkyBox.worldMatrix.M[3][0] = secondCamera.M[3][0];
-	SkyBox.worldMatrix.M[3][1] = secondCamera.M[3][1];
-	SkyBox.worldMatrix.M[3][2] = secondCamera.M[3][2];
+	SkyBox.worldMatrix.M[3][0] = viewMatrix.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = viewMatrix.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = viewMatrix.M[3][2];
+
+	SkyBox.Render();
+	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	///////////////////////
+
+	devContext->RSSetState(pRasterState);
+
+	Pyramid.Render();
+	Quad.Render();
+	Tree.Render();
+
+	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+	QuadSeed.Render();
+	devContext->GenerateMips(QuadSeed.pShaderResource);
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	devContext->OMSetRenderTargets(1, &postProcessView, DepthStencilView);
+	devContext->RSSetViewports(1, &viewPort);
+
+	//float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	//devContext->ClearRenderTargetView(postProcessView, ClearColor);
+	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	scene[0] = Inverse4x4(viewMatrix);
+
+	//D3D11_MAPPED_SUBRESOURCE sceneMap;
+	ZeroMemory(&sceneMap, sizeof(sceneMap));
+	devContext->Map(sceneMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &sceneMap);
+	memcpy(sceneMap.pData, scene, sizeof(scene));
+	devContext->Unmap(sceneMatrixBuffer, 0);
+
+	devContext->VSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
+	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
+	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
+	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
+	devContext->PSSetConstantBuffers(3, 1, &spotBuff);
+
+	devContext->GSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
+
+	//Pyramid.worldMatrices[0] = RotateY(50.0f * dt) * Pyramid.worldMatrices[0];
+	//Pyramid.worldMatrices[1] = RotateZ(50.0f * dt) * Pyramid.worldMatrices[1];
+	//Pyramid.worldMatrices[2] = RotateX(50.0f * dt) * Pyramid.worldMatrices[2];
+	//Pyramid.worldMatrices[3] = RotateY(200.0f * dt) * RotateZ(200.0f * dt) * RotateX(200.0f * dt) * Pyramid.worldMatrices[3];
+
+	//SKYBOX RENDERING/////
+	devContext->RSSetState(pOtherState);
+	//SkyBox.worldMatrix = viewMatrix;
+
+	SkyBox.worldMatrix.M[3][0] = viewMatrix.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = viewMatrix.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = viewMatrix.M[3][2];
 
 	SkyBox.Render();
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -630,6 +698,8 @@ bool DEMO_APP::Run()
 	QuadSeed.Render();
 	devContext->GenerateMips(QuadSeed.pShaderResource);
 
+	//PostQuad.Render();
+	
 	/////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
 
@@ -667,6 +737,9 @@ bool DEMO_APP::Run()
 	devContext->Unmap(spotBuff, 0);
 
 	scene[0] = Inverse4x4(viewMatrix);
+	SkyBox.worldMatrix.M[3][0] = viewMatrix.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = viewMatrix.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = viewMatrix.M[3][2];
 
 	//D3D11_MAPPED_SUBRESOURCE sceneMap;
 	ZeroMemory(&sceneMap, sizeof(sceneMap));
@@ -682,18 +755,14 @@ bool DEMO_APP::Run()
 
 	devContext->GSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
 
-	Pyramid.worldMatrices[0] = RotateY(50.0f * dt) * Pyramid.worldMatrices[0];
-	Pyramid.worldMatrices[1] = RotateZ(50.0f * dt) * Pyramid.worldMatrices[1];
-	Pyramid.worldMatrices[2] = RotateX(50.0f * dt) * Pyramid.worldMatrices[2];
-	Pyramid.worldMatrices[3] = RotateY(200.0f * dt) * RotateZ(200.0f * dt) * RotateX(200.0f * dt) * Pyramid.worldMatrices[3];
+	//Pyramid.worldMatrices[0] = RotateY(50.0f * dt) * Pyramid.worldMatrices[0];
+	//Pyramid.worldMatrices[1] = RotateZ(50.0f * dt) * Pyramid.worldMatrices[1];
+	//Pyramid.worldMatrices[2] = RotateX(50.0f * dt) * Pyramid.worldMatrices[2];
+	//Pyramid.worldMatrices[3] = RotateY(200.0f * dt) * RotateZ(200.0f * dt) * RotateX(200.0f * dt) * Pyramid.worldMatrices[3];
 
 	//SKYBOX RENDERING/////
 	devContext->RSSetState(pOtherState);
 	//SkyBox.worldMatrix = viewMatrix;
-
-	SkyBox.worldMatrix.M[3][0] = viewMatrix.M[3][0];
-	SkyBox.worldMatrix.M[3][1] = viewMatrix.M[3][1];
-	SkyBox.worldMatrix.M[3][2] = viewMatrix.M[3][2];
 
 	SkyBox.Render();
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -708,6 +777,9 @@ bool DEMO_APP::Run()
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
 	devContext->GenerateMips(QuadSeed.pShaderResource);
+
+	//WHY BROKEN?
+	PostQuad.Render();
 
 	/////////////////////2nd VIEWPORT/////////////////////////////////////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &anotherView, DepthStencilView);
@@ -759,6 +831,7 @@ bool DEMO_APP::Run()
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
 	devContext->GenerateMips(QuadSeed.pShaderResource);
+	//PostQuad.Render();
 
 	/////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
@@ -838,7 +911,6 @@ bool DEMO_APP::Run()
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
 	devContext->GenerateMips(QuadSeed.pShaderResource);
-
 
 	swapChain->Present(0, 0);
 
@@ -1045,7 +1117,9 @@ bool DEMO_APP::ShutDown()
 	QuadSeed.Shutdown();
 	//TexturePyramid.Shutdown();
 	Tree.Shutdown();
+	PostQuad.Shutdown();
 
+	SAFE_RELEASE(postProcessView);
 	SAFE_RELEASE(portsBuff);
 	SAFE_RELEASE(sndSceneBuff);
 	SAFE_RELEASE(anotherView);
