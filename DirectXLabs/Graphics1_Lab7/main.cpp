@@ -67,6 +67,8 @@ class DEMO_APP
 	Object SkyBox;
 	Object QuadSeed;
 	Object Tree;
+	Object Tree1;
+	Object Tree2;
 	Object PostQuad;
 
 	ID3D11Buffer* constBuffer = nullptr;
@@ -354,6 +356,18 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	theDevice->CreateInputLayout(skyLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Tree.pInputLayout);
 	Tree.Initialize(L"the_tree.obj", L"treeTexture.dds");
 	Translate(Tree.worldMatrix, 2.0f, -1.0f, 3.0f);
+
+	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Tree1.pVShader);
+	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Tree1.pPShader);
+	theDevice->CreateInputLayout(skyLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Tree1.pInputLayout);
+	Tree1.Initialize(L"the_tree.obj", L"treeTexture.dds");
+	Translate(Tree1.worldMatrix, 2.0f, -1.0f, 0.0f);
+
+	theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &Tree2.pVShader);
+	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Tree2.pPShader);
+	theDevice->CreateInputLayout(skyLayout, 3, VertexSlimShader, sizeof(VertexSlimShader), &Tree2.pInputLayout);
+	Tree2.Initialize(L"the_tree.obj", L"treeTexture.dds");
+	Translate(Tree2.worldMatrix, 2.0f, -1.0f, 7.0f);
 
 	theDevice->CreateVertexShader(PassToGeoVShader, sizeof(PassToGeoVShader), nullptr, &PostQuad.pVShader);
 	theDevice->CreatePixelShader(PostProcess, sizeof(PostProcess), nullptr, &PostQuad.pPShader);
@@ -658,6 +672,8 @@ bool DEMO_APP::Run()
 	Pyramid.Render();
 	Quad.Render();
 	Tree.Render();
+	Tree2.Render();
+	Tree1.Render();
 
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
@@ -709,6 +725,8 @@ bool DEMO_APP::Run()
 	Pyramid.Render();
 	Quad.Render();
 	Tree.Render();
+	Tree1.Render();
+	Tree2.Render();
 
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
@@ -790,6 +808,8 @@ bool DEMO_APP::Run()
 	Pyramid.Render();
 	Quad.Render();
 	Tree.Render();
+	Tree1.Render();
+	Tree2.Render();
 
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
@@ -846,6 +866,8 @@ bool DEMO_APP::Run()
 	Pyramid.Render();
 	Quad.Render();
 	Tree.Render();
+	Tree1.Render();
+	Tree2.Render();
 
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
@@ -926,6 +948,8 @@ bool DEMO_APP::Run()
 	Pyramid.Render();
 	Quad.Render();
 	Tree.Render();
+	Tree1.Render();
+	Tree2.Render();
 
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
@@ -1136,6 +1160,8 @@ bool DEMO_APP::ShutDown()
 	QuadSeed.Shutdown();
 	//TexturePyramid.Shutdown();
 	Tree.Shutdown();
+	Tree1.Shutdown();
+	Tree2.Shutdown();
 	PostQuad.Shutdown();
 
 	SAFE_RELEASE(postTexture);

@@ -5,7 +5,7 @@ struct P_IN
 	float3 nrm  : NORMAL;
 };
 
-texture2D baseTexture : register(t0);
+Texture2D baseTexture : register(t0);
 
 SamplerState filter : register(s0);
 
