@@ -70,8 +70,8 @@ struct SPOT_LIGHT
 	float position[3];
 	float coneRatio;
 	float coneDir[3];
-	float color[4];
 	float padding = 0.0f;
+	float color[4];
 
 	SPOT_LIGHT(float x = 0, float y = 0, float z = 0,
 			   float dirX = 0, float dirY = 0, float dirZ = 0,
@@ -80,7 +80,7 @@ struct SPOT_LIGHT
 	{
 		position[0] = x; position[1] = y; position[2] = z;
 		coneDir[0] = dirX; coneDir[1] = dirY; coneDir[2] = dirZ;
-		color[0] = a; color[1] = r; color[2] = g; color[3] = b;
+		color[0] = r; color[1] = g; color[2] = b; color[3] = a;
 		coneRatio = ratio;
 	}
 };

@@ -28,6 +28,7 @@ class DEMO_APP
 	IDXGISwapChain*					swapChain;			// responsible for presenting / blitting
 	D3D11_VIEWPORT					viewPort;
 	D3D11_VIEWPORT					otherPort;
+	D3D11_VIEWPORT					portsArray[2];
 
 	ID3D11Texture2D*				backBuffer;
 
@@ -50,6 +51,8 @@ class DEMO_APP
 	XTime							theTime;
 
 	M_4x4 scene[2];
+	M_4x4 sndScene[2];
+
 	M_4x4 worldMatrix;
 	M_4x4 viewMatrix;
 	M_4x4 projMatrix;
@@ -68,7 +71,9 @@ class DEMO_APP
 
 	ID3D11Buffer* worldMatrixBuffer = nullptr;
 	ID3D11Buffer* sceneMatrixBuffer = nullptr;
-	//ID3D11Buffer* instancedBuffer = nullptr;
+
+	ID3D11Buffer* portsBuff = nullptr;
+	ID3D11Buffer* sndSceneBuff = nullptr;
 
 	ID3D11Buffer* indexBuffer = nullptr;
 
@@ -257,8 +262,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	otherPort.TopLeftX = 0.0f;
 	otherPort.TopLeftY = 0.0f;
-	otherPort.Width = BACKBUFFER_WIDTH;
-	otherPort.Height = BACKBUFFER_HEIGHT;
+	otherPort.Width = BACKBUFFER_WIDTH / 4;
+	otherPort.Height = BACKBUFFER_HEIGHT / 4;
 	otherPort.MinDepth = 0.0f;
 	otherPort.MaxDepth = 1.0f;
 
@@ -393,6 +398,16 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	QuadSeed.Initialize(nullptr, nullptr);
 	Translate(QuadSeed.worldMatrix, 0.0f, 0.0f, 3.0f);
+
+	//D3D11_BUFFER_DESC viewPortsDesc;
+	//ZeroMemory(&viewPortsDesc, sizeof(viewPortsDesc));
+	//viewPortsDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	//viewPortsDesc.ByteWidth = sizeof(D3D11_VIEWPORT) * 2;
+	//viewPortsDesc.Usage = D3D11_USAGE_DYNAMIC;
+	//viewPortsDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	//
+	//D3D11_SUBRESOURCE_DATA viewPortsSub;
+	//ZeroMemory(&viewPortsSub, sizeof(viewPortsSub));
 
 #pragma region THE_LIGHTS
 	theLight = DIR_LIGHT(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 1.0f);
@@ -560,7 +575,7 @@ bool DEMO_APP::Run()
 	float dt = (float)theTime.Delta();
 
 	devContext->OMSetRenderTargets(1, &anotherView, DepthStencilView);
-	devContext->RSSetViewports(1, &otherPort);
+	devContext->RSSetViewports(1, &viewPort);
 
 	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	devContext->ClearRenderTargetView(targetView, ClearColor);
@@ -609,7 +624,7 @@ bool DEMO_APP::Run()
 	/////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
 
-	devContext->RSSetViewports(1, &viewPort);
+	//devContext->RSSetViewports(1, &viewPort);
 
 	//float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	devContext->ClearRenderTargetView(targetView, ClearColor);
@@ -680,6 +695,130 @@ bool DEMO_APP::Run()
 	Pyramid.Render();
 	Quad.Render();
 	QuadSeed.Render();
+
+	/////////////////////2nd VIEWPORT/////////////////////////////////////////////////////////////////////////////////////////////////
+	devContext->OMSetRenderTargets(1, &anotherView, DepthStencilView);
+	devContext->RSSetViewports(1, &otherPort);
+
+	//float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	devContext->ClearRenderTargetView(anotherView, ClearColor);
+	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	scene[0] = secondCamera;
+
+	//D3D11_MAPPED_SUBRESOURCE sceneMap;
+	ZeroMemory(&sceneMap, sizeof(sceneMap));
+	devContext->Map(sceneMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &sceneMap);
+	memcpy(sceneMap.pData, scene, sizeof(scene));
+	devContext->Unmap(sceneMatrixBuffer, 0);
+
+	devContext->VSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
+	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
+	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
+	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
+	devContext->PSSetConstantBuffers(3, 1, &spotBuff);
+
+	devContext->GSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
+
+	//Pyramid.worldMatrices[0] = RotateY(50.0f * dt) * Pyramid.worldMatrices[0];
+	//Pyramid.worldMatrices[1] = RotateZ(50.0f * dt) * Pyramid.worldMatrices[1];
+	//Pyramid.worldMatrices[2] = RotateX(50.0f * dt) * Pyramid.worldMatrices[2];
+	//Pyramid.worldMatrices[3] = RotateY(200.0f * dt) * RotateZ(200.0f * dt) * RotateX(200.0f * dt) * Pyramid.worldMatrices[3];
+
+	//SKYBOX RENDERING/////
+	devContext->RSSetState(pOtherState);
+	//SkyBox.worldMatrix = viewMatrix;
+
+	SkyBox.worldMatrix.M[3][0] = secondCamera.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = secondCamera.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = secondCamera.M[3][2];
+
+	SkyBox.Render();
+	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	///////////////////////
+
+	devContext->RSSetState(pRasterState);
+
+	Pyramid.Render();
+	Quad.Render();
+
+	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+	QuadSeed.Render();
+	/////////////////////////////////////////////////////////////////
+	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
+
+	//devContext->RSSetViewports(1, &viewPort);
+
+	//float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	//devContext->ClearRenderTargetView(targetView, ClearColor);
+	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	//MoveCamera(5.0f, 200.0f, dt);
+
+
+	//D3D11_MAPPED_SUBRESOURCE ambMap;
+	ZeroMemory(&ambMap, sizeof(ambMap));
+	devContext->Map(ambientBuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &ambMap);
+	memcpy(ambMap.pData, &ambientLight, sizeof(ambientLight));
+	devContext->Unmap(ambientBuff, 0);
+
+	//D3D11_MAPPED_SUBRESOURCE lightMap;
+	ZeroMemory(&lightMap, sizeof(lightMap));
+	devContext->Map(lightBuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &lightMap);
+	memcpy(lightMap.pData, &theLight, sizeof(theLight));
+	devContext->Unmap(lightBuff, 0);
+
+	//D3D11_MAPPED_SUBRESOURCE ptLtMap;
+	ZeroMemory(&ptLtMap, sizeof(ptLtMap));
+	devContext->Map(ptltBuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &ptLtMap);
+	memcpy(ptLtMap.pData, &thePtLight, sizeof(thePtLight));
+	devContext->Unmap(ptltBuff, 0);
+
+	//D3D11_MAPPED_SUBRESOURCE spotMap;
+	ZeroMemory(&spotMap, sizeof(spotMap));
+	devContext->Map(spotBuff, 0, D3D11_MAP_WRITE_DISCARD, 0, &spotMap);
+	memcpy(spotMap.pData, &theSpotLight, sizeof(theSpotLight));
+	devContext->Unmap(spotBuff, 0);
+
+	scene[0] = secondCamera;//Inverse4x4(viewMatrix);
+
+	//D3D11_MAPPED_SUBRESOURCE sceneMap;
+	ZeroMemory(&sceneMap, sizeof(sceneMap));
+	devContext->Map(sceneMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &sceneMap);
+	memcpy(sceneMap.pData, scene, sizeof(scene));
+	devContext->Unmap(sceneMatrixBuffer, 0);
+
+	devContext->VSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
+	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
+	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
+	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
+	devContext->PSSetConstantBuffers(3, 1, &spotBuff);
+
+	devContext->GSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
+
+	Pyramid.worldMatrices[0] = RotateY(50.0f * dt) * Pyramid.worldMatrices[0];
+	Pyramid.worldMatrices[1] = RotateZ(50.0f * dt) * Pyramid.worldMatrices[1];
+	Pyramid.worldMatrices[2] = RotateX(50.0f * dt) * Pyramid.worldMatrices[2];
+	Pyramid.worldMatrices[3] = RotateY(200.0f * dt) * RotateZ(200.0f * dt) * RotateX(200.0f * dt) * Pyramid.worldMatrices[3];
+
+	//SKYBOX RENDERING/////
+	devContext->RSSetState(pOtherState);
+	//SkyBox.worldMatrix = viewMatrix;
+
+	SkyBox.worldMatrix.M[3][0] = secondCamera.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = secondCamera.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = secondCamera.M[3][2];
+
+	SkyBox.Render();
+	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	///////////////////////
+
+	devContext->RSSetState(pRasterState);
+
+	Pyramid.Render();
+	Quad.Render();
+	QuadSeed.Render();
+
 
 	swapChain->Present(0, 0);
 
@@ -799,6 +938,24 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 		{
 			theSpotLight.position[0] += moveSpd * dt;
 		}
+
+		// Rotation
+		if (GetAsyncKeyState(VK_RIGHT))
+		{
+			theSpotLight.coneDir[0] += moveSpd * dt;
+		}
+		else if (GetAsyncKeyState(VK_LEFT))
+		{
+			theSpotLight.coneDir[0] -= moveSpd * dt;
+		}
+		if (GetAsyncKeyState(VK_UP))
+		{
+			theSpotLight.coneDir[2] += moveSpd * dt;
+		}
+		else if (GetAsyncKeyState(VK_DOWN))
+		{
+			theSpotLight.coneDir[2] -= moveSpd * dt;
+		}
 	}
 	else if (witchLight == 0)
 	{
@@ -868,6 +1025,8 @@ bool DEMO_APP::ShutDown()
 	QuadSeed.Shutdown();
 	//TexturePyramid.Shutdown();
 
+	SAFE_RELEASE(portsBuff);
+	SAFE_RELEASE(sndSceneBuff);
 	SAFE_RELEASE(anotherView);
 	SAFE_RELEASE(renderTexture);
 	SAFE_RELEASE(fixerTexture);

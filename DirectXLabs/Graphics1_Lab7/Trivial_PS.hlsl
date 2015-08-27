@@ -34,12 +34,12 @@ cbuffer SPOT_LIGHT : register (b3)
 	float3 spotLightPos;
 	float coneRatio;
 	float3 coneDir;
-	float4 spotLightColor;
 	float spotNada;
+	float4 spotLightColor;
 }
 
 
-float4 main( V_IN input ) : SV_TARGET
+float4 main(V_IN input) : SV_TARGET
 {
 	float4 baseColor = baseTexture.Sample(filters[0], input.uv.xy);
 
@@ -52,15 +52,15 @@ float4 main( V_IN input ) : SV_TARGET
 	float4 spotSpecResult;
 
 	float3 wnrm = normalize(input.nrm);
-	//DIRECTIONAL LIGHT ////////////////////////////////////////////////////////////////////////////////
-	float3 ldir = -normalize(lightDir);
-	float lRatio = saturate(dot(ldir, wnrm));
+		//DIRECTIONAL LIGHT ////////////////////////////////////////////////////////////////////////////////
+		float3 ldir = -normalize(lightDir);
+		float lRatio = saturate(dot(ldir, wnrm));
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//POINT LIGHT //////////////////////////////////////////////////////////////////////////////////////
 	float3 pldir = normalize(ptLightPos - input.posLT.xyz);
-	float plRatio = saturate(dot(pldir, wnrm));
-	
+		float plRatio = saturate(dot(pldir, wnrm));
+
 	float theLength = length(ptLightPos - input.posLT.xyz);
 	float attRatio = theLength / 3;
 	float theClamp = saturate(attRatio);
@@ -70,7 +70,7 @@ float4 main( V_IN input ) : SV_TARGET
 
 	//SPOTLIGHT ////////////////////////////////////////////////////////////////////////////////////////
 	float3 spldir = normalize(spotLightPos - input.posLT.xyz);
-	float splRatio = saturate(dot(spldir, wnrm));
+		float splRatio = saturate(dot(spldir, wnrm));
 
 	theLength = length(spotLightPos - input.posLT.xyz);
 	float surfaceRatio = saturate(dot(-spldir, coneDir));
@@ -91,5 +91,5 @@ float4 main( V_IN input ) : SV_TARGET
 
 	float4 finalColor = saturate(dirDiffResult + ptDiffResult + spotDiffResult + (baseColor * ambientColor));
 
-	return finalColor;
+		return finalColor;
 }
