@@ -12,7 +12,6 @@ struct GSOutput
 	float4 posH : SV_POSITION;
 	float2 uv  : UV;
 	float3 nrm  : NORMAL;
-	float4 posLT : LT_POSITION;
 };
 
 //cbuffer OBJECT : register(b0)
@@ -40,16 +39,16 @@ void main(
 		elements[i].nrm = input[0].nrm;
 	}
 
-	elements[0].posH += float4(-1.0f, 1.0f, 0.0f, 0.0f);
 	elements[0].uv = float2(0.0f, 0.0f);
-	elements[1].posH += float4(1.0f, 1.0f, 0.0f, 0.0f);
+	elements[0].posH += float4(-1.0f, 1.0f, 0.0f, 0.0f);
 	elements[1].uv = float2(1.0f, 0.0f);
-	elements[2].posH += float4(1.0f, -1.0f, 0.0f, 0.0f);
+	elements[1].posH += float4(1.0f, 1.0f, 0.0f, 0.0f);
 	elements[2].uv = float2(1.0f, 1.0f);
+	elements[2].posH += float4(1.0f, -1.0f, 0.0f, 0.0f);
 	elements[3] = elements[0];
 	elements[4] = elements[2];
-	elements[5].posH += float4(-1.0f, -1.0f, 0.0f, 0.0f);
 	elements[5].uv = float2(0.0f, 1.0f);
+	elements[5].posH += float4(-1.0f, -1.0f, 0.0f, 0.0f);
 
 
 	for (uint i = 0; i < 6; i++)

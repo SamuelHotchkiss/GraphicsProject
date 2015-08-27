@@ -3,7 +3,6 @@ struct P_IN
 	float4 posH : SV_POSITION;
 	float2 uv  : UV;
 	float3 nrm  : NORMAL;
-	float4 posLT : LT_POSITION;
 };
 
 texture2D baseTexture : register(t0);

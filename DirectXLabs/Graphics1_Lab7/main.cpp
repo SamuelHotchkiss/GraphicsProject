@@ -287,7 +287,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	SkyBox.Initialize(L"sky.obj", L"SkyboxOcean.dds");
 
-
 #if 1
 	theDevice->CreateVertexShader(InstanceVShader, sizeof(InstanceVShader), nullptr, &Pyramid.pVShader);
 	theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &Pyramid.pPShader);
@@ -663,6 +662,7 @@ bool DEMO_APP::Run()
 	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	QuadSeed.Render();
 	devContext->GenerateMips(QuadSeed.pShaderResource);
+
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &postProcessView, DepthStencilView);
 	devContext->RSSetViewports(1, &viewPort);
@@ -714,8 +714,9 @@ bool DEMO_APP::Run()
 	QuadSeed.Render();
 	devContext->GenerateMips(QuadSeed.pShaderResource);
 
+	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), postTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	PostQuad.Render();
-	
+
 	/////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
 
@@ -795,7 +796,9 @@ bool DEMO_APP::Run()
 	devContext->GenerateMips(QuadSeed.pShaderResource);
 
 	//WHY BROKEN?
+	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), postTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	PostQuad.Render();
+
 
 	/////////////////////2nd VIEWPORT/////////////////////////////////////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &anotherView, DepthStencilView);

@@ -6,7 +6,7 @@ struct V_IN
 	float4 posLT : LT_POSITION;
 };
 
-texture2D baseTexture : register(t0);
+Texture2D baseTexture : register(t0);
 
 SamplerState filters[2] : register(s0);
 
