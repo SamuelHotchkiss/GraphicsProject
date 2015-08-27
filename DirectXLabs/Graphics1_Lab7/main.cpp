@@ -35,6 +35,7 @@ class DEMO_APP
 	ID3D11RenderTargetView*			anotherView = nullptr;
 	ID3D11Texture2D*				renderTexture = nullptr;
 	ID3D11Texture2D*				fixerTexture = nullptr;
+	ID3D11Texture2D*				postTexture = nullptr;
 
 	ID3D11RenderTargetView*			postProcessView = nullptr;
 
@@ -388,6 +389,21 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	viewDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 	theDevice->CreateTexture2D(&viewDesc, NULL, &renderTexture);
 
+	D3D11_TEXTURE2D_DESC postDesc;
+	ZeroMemory(&postDesc, sizeof(postDesc));
+	postDesc.Width = BACKBUFFER_WIDTH;
+	postDesc.Height = BACKBUFFER_HEIGHT;
+	postDesc.MipLevels = 1;
+	postDesc.ArraySize = 1;
+	postDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	postDesc.SampleDesc.Count = 4;
+	postDesc.SampleDesc.Quality = D3D11_CENTER_MULTISAMPLE_PATTERN;
+	postDesc.Usage = D3D11_USAGE_DEFAULT;
+	postDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	postDesc.CPUAccessFlags = 0;
+	postDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+	theDevice->CreateTexture2D(&postDesc, NULL, &postTexture);
+
 	viewDesc.SampleDesc.Count = 1;
 	viewDesc.SampleDesc.Quality = 0;
 	theDevice->CreateTexture2D(&viewDesc, nullptr, &fixerTexture);
@@ -398,7 +414,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	rendViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
 	rendViewDesc.Texture2D.MipSlice = 0;
 	theDevice->CreateRenderTargetView(renderTexture, &rendViewDesc, &anotherView);
-	theDevice->CreateRenderTargetView(renderTexture, &rendViewDesc, &postProcessView);
+	theDevice->CreateRenderTargetView(postTexture, &rendViewDesc, &postProcessView);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC shadeDesc;
 	ZeroMemory(&shadeDesc, sizeof(shadeDesc));
@@ -406,8 +422,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	shadeDesc.Format = viewDesc.Format;
 	shadeDesc.Texture2D.MostDetailedMip = 0;
 	shadeDesc.Texture2D.MipLevels = 5;
-	//theDevice->CreateShaderResourceView(renderTexture, &shadeDesc, &QuadSeed.pShaderResource);
-	theDevice->CreateShaderResourceView(renderTexture, &shadeDesc, &PostQuad.pShaderResource);
+	theDevice->CreateShaderResourceView(renderTexture, &shadeDesc, &QuadSeed.pShaderResource);
+	theDevice->CreateShaderResourceView(postTexture, &shadeDesc, &PostQuad.pShaderResource);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC yetAnotherShadeDesc;
 	ZeroMemory(&yetAnotherShadeDesc, sizeof(yetAnotherShadeDesc));
@@ -415,12 +431,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	yetAnotherShadeDesc.Format = viewDesc.Format;
 	yetAnotherShadeDesc.Texture2D.MostDetailedMip = 0;
 	yetAnotherShadeDesc.Texture2D.MipLevels = 5;
-	//theDevice->CreateShaderResourceView(renderTexture, &yetAnotherShadeDesc, &QuadSeed.pOtherShaderResource);
-	theDevice->CreateShaderResourceView(renderTexture, &yetAnotherShadeDesc, &PostQuad.pOtherShaderResource);
+	theDevice->CreateShaderResourceView(renderTexture, &yetAnotherShadeDesc, &QuadSeed.pOtherShaderResource);
+	theDevice->CreateShaderResourceView(postTexture, &yetAnotherShadeDesc, &PostQuad.pOtherShaderResource);
 
 	PostQuad.Initialize();
 
-	QuadSeed.Initialize(nullptr, L"checkerboard.dds");
+	QuadSeed.Initialize(nullptr);
 	Translate(QuadSeed.worldMatrix, 0.0f, 0.0f, 3.0f);
 
 	D3D11_BUFFER_DESC viewPortsDesc;
@@ -605,7 +621,7 @@ bool DEMO_APP::Run()
 	devContext->ClearRenderTargetView(anotherView, ClearColor);
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	scene[0] = Inverse4x4(viewMatrix);
+	scene[0] = Inverse4x4(secondCamera);
 
 	D3D11_MAPPED_SUBRESOURCE sceneMap;
 	ZeroMemory(&sceneMap, sizeof(sceneMap));
@@ -630,9 +646,9 @@ bool DEMO_APP::Run()
 	devContext->RSSetState(pOtherState);
 	//SkyBox.worldMatrix = viewMatrix;
 
-	SkyBox.worldMatrix.M[3][0] = viewMatrix.M[3][0];
-	SkyBox.worldMatrix.M[3][1] = viewMatrix.M[3][1];
-	SkyBox.worldMatrix.M[3][2] = viewMatrix.M[3][2];
+	SkyBox.worldMatrix.M[3][0] = secondCamera.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = secondCamera.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = secondCamera.M[3][2];
 
 	SkyBox.Render();
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -652,7 +668,7 @@ bool DEMO_APP::Run()
 	devContext->RSSetViewports(1, &viewPort);
 
 	//float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	//devContext->ClearRenderTargetView(postProcessView, ClearColor);
+	devContext->ClearRenderTargetView(postProcessView, ClearColor);
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	scene[0] = Inverse4x4(viewMatrix);
@@ -698,7 +714,7 @@ bool DEMO_APP::Run()
 	QuadSeed.Render();
 	devContext->GenerateMips(QuadSeed.pShaderResource);
 
-	//PostQuad.Render();
+	PostQuad.Render();
 	
 	/////////////////////////////////////////////////////////////////
 	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
@@ -1119,6 +1135,7 @@ bool DEMO_APP::ShutDown()
 	Tree.Shutdown();
 	PostQuad.Shutdown();
 
+	SAFE_RELEASE(postTexture);
 	SAFE_RELEASE(postProcessView);
 	SAFE_RELEASE(portsBuff);
 	SAFE_RELEASE(sndSceneBuff);
