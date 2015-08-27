@@ -23,13 +23,17 @@ class DEMO_APP
 	HINSTANCE						application;
 	WNDPROC							appWndProc;
 	HWND							window;
-	// TODO: PART 1 STEP 2
-	//ID3D11Device*					theDevice;			// used for  creating stuff
-	//ID3D11DeviceContext*			devContext;			// binds objects to the pipeline
+
 	ID3D11RenderTargetView*			targetView;			// a pointer to a texture we are reading from
 	IDXGISwapChain*					swapChain;			// responsible for presenting / blitting
 	D3D11_VIEWPORT					viewPort;
+	D3D11_VIEWPORT					otherPort;
+
 	ID3D11Texture2D*				backBuffer;
+
+	ID3D11RenderTargetView*			anotherView = nullptr;
+	ID3D11Texture2D*				renderTexture = nullptr;
+	ID3D11Texture2D*				fixerTexture = nullptr;
 
 	ID3D11Texture2D*				cubeTexture = nullptr;
 	ID3D11ShaderResourceView*		shadeResourceView = nullptr;
@@ -49,13 +53,14 @@ class DEMO_APP
 	M_4x4 worldMatrix;
 	M_4x4 viewMatrix;
 	M_4x4 projMatrix;
-	M_4x4 cameraMatrix;
+	M_4x4 cameraMatrix, secondCamera;
 
 	Object Quad;
 
 	Object Pyramid;
 	Object SkyBox;
 	Object QuadSeed;
+	Object TexturePyramid;
 
 	ID3D11Buffer* constBuffer = nullptr;
 
@@ -250,6 +255,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	viewPort.MinDepth = 0.0f;
 	viewPort.MaxDepth = 1.0f;
 
+	otherPort.TopLeftX = 0.0f;
+	otherPort.TopLeftY = 0.0f;
+	otherPort.Width = BACKBUFFER_WIDTH;
+	otherPort.Height = BACKBUFFER_HEIGHT;
+	otherPort.MinDepth = 0.0f;
+	otherPort.MaxDepth = 1.0f;
 
 #if 1
 
@@ -289,6 +300,12 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	Translate(Pyramid.worldMatrix, 0.0f, 0.0f, 3.0f);
 
+	//theDevice->CreateVertexShader(VertexSlimShader, sizeof(VertexSlimShader), nullptr, &TexturePyramid.pVShader);
+	//theDevice->CreatePixelShader(Trivial_PS, sizeof(Trivial_PS), nullptr, &TexturePyramid.pPShader);
+	//theDevice->CreateInputLayout(vLayout, numElements, VertexSlimShader, sizeof(VertexSlimShader), &TexturePyramid.pInputLayout);
+
+	//TexturePyramid.Initialize(L"test_pyramid_trianlge.obj", L"checkerboard.dds");
+
 	float length = 5.0f;
 
 	VertexOBJ quad[4] =
@@ -324,13 +341,57 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	theDevice->CreateInputLayout(skyLayout, 3, PassToGeoVShader, sizeof(PassToGeoVShader), &QuadSeed.pInputLayout);
 
-	VertexOBJ seed[1] = { { 0.0f, 0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f } };
+	VertexOBJ seed =  { 0.0f, 0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f };
+	unsigned int x = 0;
+	QuadSeed.pVertices = &seed;
+	QuadSeed.numVertices = 1;
+	QuadSeed.pIndices = &x;
+	QuadSeed.numIndices = 1;
+	
+	D3D11_TEXTURE2D_DESC viewDesc;
+	ZeroMemory(&viewDesc, sizeof(viewDesc));
+	viewDesc.Width = BACKBUFFER_WIDTH;
+	viewDesc.Height = BACKBUFFER_HEIGHT;
+	viewDesc.MipLevels = 1;
+	viewDesc.ArraySize = 1;
+	viewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	viewDesc.SampleDesc.Count = 4;
+	viewDesc.SampleDesc.Quality = D3D11_CENTER_MULTISAMPLE_PATTERN;
+	viewDesc.Usage = D3D11_USAGE_DEFAULT;
+	viewDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	viewDesc.CPUAccessFlags = 0;
+	viewDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+	theDevice->CreateTexture2D(&viewDesc, NULL, &renderTexture);
 
-	QuadSeed.pVertices = seed;
-	QuadSeed.numVertices = 6;
-	QuadSeed.pIndices = quadIndices;
-	QuadSeed.numIndices = 6;
-	QuadSeed.Initialize(nullptr, L"checkerboard.dds");
+	viewDesc.SampleDesc.Count = 1;
+	viewDesc.SampleDesc.Quality = 0;
+	theDevice->CreateTexture2D(&viewDesc, nullptr, &fixerTexture);
+
+	D3D11_RENDER_TARGET_VIEW_DESC rendViewDesc;
+	ZeroMemory(&rendViewDesc, sizeof(rendViewDesc));
+	rendViewDesc.Format = viewDesc.Format;
+	rendViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+	rendViewDesc.Texture2D.MipSlice = 0;
+	theDevice->CreateRenderTargetView(renderTexture, &rendViewDesc, &anotherView);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC shadeDesc;
+	ZeroMemory(&shadeDesc, sizeof(shadeDesc));
+	shadeDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMS;
+	shadeDesc.Format = viewDesc.Format;
+	shadeDesc.Texture2D.MostDetailedMip = 0;
+	shadeDesc.Texture2D.MipLevels = 1;
+	theDevice->CreateShaderResourceView(renderTexture, &shadeDesc, &QuadSeed.pShaderResource);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC yetAnotherShadeDesc;
+	ZeroMemory(&yetAnotherShadeDesc, sizeof(yetAnotherShadeDesc));
+	yetAnotherShadeDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	yetAnotherShadeDesc.Format = viewDesc.Format;
+	yetAnotherShadeDesc.Texture2D.MostDetailedMip = 0;
+	yetAnotherShadeDesc.Texture2D.MipLevels = 1;
+	theDevice->CreateShaderResourceView(renderTexture, &yetAnotherShadeDesc, &QuadSeed.pOtherShaderResource);
+
+
+	QuadSeed.Initialize(nullptr, nullptr);
 	Translate(QuadSeed.worldMatrix, 0.0f, 0.0f, 3.0f);
 
 #pragma region THE_LIGHTS
@@ -449,20 +510,6 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 	theDevice->CreateBuffer(&worldBuffDesc, &worldSub, &pWorldBuffer);
 
-	/*D3D11_BUFFER_DESC instBuffDesc;
-	ZeroMemory(&instBuffDesc, sizeof(instBuffDesc));
-	instBuffDesc.Usage = D3D11_USAGE_DYNAMIC;
-	instBuffDesc.ByteWidth = sizeof(M_4x4) * Pyramid.numInstances;
-	instBuffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	instBuffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
-	D3D11_SUBRESOURCE_DATA instSub;
-	instSub.pSysMem = Pyramid.worldMatrices;
-	instSub.SysMemPitch = 0;
-	instSub.SysMemSlicePitch = 0;
-
-	theDevice->CreateBuffer(&instBuffDesc, &instSub, &instancedBuffer);*/
-
 	D3D11_BUFFER_DESC sceneBuffDesc;
 	ZeroMemory(&sceneBuffDesc, sizeof(sceneBuffDesc));
 	sceneBuffDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -508,17 +555,65 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 
 bool DEMO_APP::Run()
 {
-	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
+	theTime.Signal();
 
-	devContext->RSSetViewports(1, &viewPort);
+	float dt = (float)theTime.Delta();
+
+	devContext->OMSetRenderTargets(1, &anotherView, DepthStencilView);
+	devContext->RSSetViewports(1, &otherPort);
 
 	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	devContext->ClearRenderTargetView(targetView, ClearColor);
 	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	theTime.Signal();
+	scene[0] = secondCamera;
 
-	float dt = (float)theTime.Delta();
+	D3D11_MAPPED_SUBRESOURCE sceneMap;
+	ZeroMemory(&sceneMap, sizeof(sceneMap));
+	devContext->Map(sceneMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &sceneMap);
+	memcpy(sceneMap.pData, scene, sizeof(scene));
+	devContext->Unmap(sceneMatrixBuffer, 0);
+
+	devContext->VSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
+	devContext->PSSetConstantBuffers(0, 1, &lightBuff);
+	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
+	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
+	devContext->PSSetConstantBuffers(3, 1, &spotBuff);
+
+	devContext->GSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
+
+	//Pyramid.worldMatrices[0] = RotateY(50.0f * dt) * Pyramid.worldMatrices[0];
+	//Pyramid.worldMatrices[1] = RotateZ(50.0f * dt) * Pyramid.worldMatrices[1];
+	//Pyramid.worldMatrices[2] = RotateX(50.0f * dt) * Pyramid.worldMatrices[2];
+	//Pyramid.worldMatrices[3] = RotateY(200.0f * dt) * RotateZ(200.0f * dt) * RotateX(200.0f * dt) * Pyramid.worldMatrices[3];
+
+	//SKYBOX RENDERING/////
+	devContext->RSSetState(pOtherState);
+	//SkyBox.worldMatrix = viewMatrix;
+
+	SkyBox.worldMatrix.M[3][0] = secondCamera.M[3][0];
+	SkyBox.worldMatrix.M[3][1] = secondCamera.M[3][1];
+	SkyBox.worldMatrix.M[3][2] = secondCamera.M[3][2];
+
+	SkyBox.Render();
+	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	///////////////////////
+
+	devContext->RSSetState(pRasterState);
+
+	Pyramid.Render();
+	Quad.Render();
+
+	devContext->ResolveSubresource(fixerTexture, D3D11CalcSubresource(0, 0, 1), renderTexture, D3D11CalcSubresource(0, 0, 1), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+	QuadSeed.Render();
+	/////////////////////////////////////////////////////////////////
+	devContext->OMSetRenderTargets(1, &targetView, DepthStencilView);
+
+	devContext->RSSetViewports(1, &viewPort);
+
+	//float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	devContext->ClearRenderTargetView(targetView, ClearColor);
+	devContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	MoveCamera(5.0f, 200.0f, dt);
 
@@ -549,7 +644,7 @@ bool DEMO_APP::Run()
 
 	scene[0] = Inverse4x4(viewMatrix);
 
-	D3D11_MAPPED_SUBRESOURCE sceneMap;
+	//D3D11_MAPPED_SUBRESOURCE sceneMap;
 	ZeroMemory(&sceneMap, sizeof(sceneMap));
 	devContext->Map(sceneMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &sceneMap);
 	memcpy(sceneMap.pData, scene, sizeof(scene));
@@ -560,7 +655,7 @@ bool DEMO_APP::Run()
 	devContext->PSSetConstantBuffers(1, 1, &ambientBuff);
 	devContext->PSSetConstantBuffers(2, 1, &ptltBuff);
 	devContext->PSSetConstantBuffers(3, 1, &spotBuff);
-	//devContext->GSSetConstantBuffers(0, 1, &pWorldBuffer);
+
 	devContext->GSSetConstantBuffers(1, 1, &sceneMatrixBuffer);
 
 	Pyramid.worldMatrices[0] = RotateY(50.0f * dt) * Pyramid.worldMatrices[0];
@@ -620,19 +715,19 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 		// Translation
 		if (GetAsyncKeyState('W'))
 		{
-			theLight.direction[3] += moveSpd * dt;
+			theLight.direction[0] += moveSpd * dt;
 		}
 		else if (GetAsyncKeyState('S'))
 		{
-			theLight.direction[3] -= moveSpd * dt;
+			theLight.direction[0] -= moveSpd * dt;
 		}
 		if (GetAsyncKeyState('A'))
 		{
-			theLight.direction[0] -= moveSpd * dt;
+			theLight.direction[2] -= moveSpd * dt;
 		}
 		else if (GetAsyncKeyState('D'))
 		{
-			theLight.direction[0] += moveSpd * dt;
+			theLight.direction[2] += moveSpd * dt;
 		}
 	}
 	else if (witchLight == 2)
@@ -670,7 +765,41 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 			thePtLight.direction[0] += moveSpd * dt;
 		}
 	}
+	else if (witchLight == 3)
+	{
+		if (GetAsyncKeyState('Q') & 0x1)
+		{
+			theSpotLight.color[0] = 0.0f;
+			theSpotLight.color[1] = 0.0f;
+			theSpotLight.color[2] = 0.0f;
+			theSpotLight.color[3] = 0.0f;
+		}
+		else if (GetAsyncKeyState('E') & 0x1)
+		{
+			theSpotLight.color[0] = 0.0f;
+			theSpotLight.color[1] = 1.0f;
+			theSpotLight.color[2] = 0.0f;
+			theSpotLight.color[3] = 1.0f;
+		}
 
+		// Translation
+		if (GetAsyncKeyState('W'))
+		{
+			theSpotLight.position[2] += moveSpd * dt;
+		}
+		else if (GetAsyncKeyState('S'))
+		{
+			theSpotLight.position[2] -= moveSpd * dt;
+		}
+		if (GetAsyncKeyState('A'))
+		{
+			theSpotLight.position[0] -= moveSpd * dt;
+		}
+		else if (GetAsyncKeyState('D'))
+		{
+			theSpotLight.position[0] += moveSpd * dt;
+		}
+	}
 	else if (witchLight == 0)
 	{
 		// Translation
@@ -723,10 +852,6 @@ void DEMO_APP::MoveCamera(float moveSpd, float rotSpeed, float dt)
 	prevPoint = currPoint;
 }
 
-void DEMO_APP::Resize()
-{
-
-}
 
 //************************************************************
 //************ DESTRUCTION ***********************************
@@ -741,7 +866,11 @@ bool DEMO_APP::ShutDown()
 	Pyramid.Shutdown();
 	SkyBox.Shutdown();
 	QuadSeed.Shutdown();
+	//TexturePyramid.Shutdown();
 
+	SAFE_RELEASE(anotherView);
+	SAFE_RELEASE(renderTexture);
+	SAFE_RELEASE(fixerTexture);
 	SAFE_RELEASE(pOtherState);
 	SAFE_RELEASE(spotBuff);
 	SAFE_RELEASE(ptltBuff);

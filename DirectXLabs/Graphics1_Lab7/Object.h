@@ -64,6 +64,7 @@ public:
 	ID3D11GeometryShader*		pGShader = nullptr;		// This object's personal geometry shader CREATE EXTERNALLY
 
 	ID3D11ShaderResourceView*	pShaderResource = nullptr;		// Resource required by shader (usually some sort of texture)
+	ID3D11ShaderResourceView*	pOtherShaderResource = nullptr;
 
 	vector<VertexOBJ> mesh;
 	vector<unsigned int> meshIndices;
@@ -251,6 +252,7 @@ void Object::Shutdown()
 	SAFE_RELEASE(pPShader);
 	SAFE_RELEASE(pShaderResource);
 	SAFE_RELEASE(pGShader);
+	SAFE_RELEASE(pOtherShaderResource);
 }
 
 void Object::LoadModelFromFile(const wchar_t* file)
@@ -396,9 +398,9 @@ unsigned int Object::BuildIndices(VertexOBJ vert)
 	return mesh.size() - 1;
 }
 
-void Object::WeaveModelThread(void* pointer, const wchar_t* filename)
+void Object::WeaveModelThread(void* object, const wchar_t* filename)
 {
-	static_cast<Object*>(pointer)->LoadModelFromFile(filename);
+	static_cast<Object*>(object)->LoadModelFromFile(filename);
 }
 
 void Object::WeaveTextureThread(void* object, const wchar_t* filename)
